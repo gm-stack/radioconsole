@@ -6,6 +6,7 @@ from . import turbo_colormap
 
 class WaterfallDisplay(object):
     REL_BANDWIDTHS = {
+        1200000: range(100000, 600001, 100000),
         600000: range(100000, 300001, 100000), 
         500000: range(50000, 250001, 50000), 
         400000: range(50000, 200001, 50000, ), 
@@ -32,7 +33,7 @@ class WaterfallDisplay(object):
         self.abs_freq_high = 7300000
 
         self.rel_bandwidth_index = 0
-        self.rel_bandwidth = 600000
+        self.rel_bandwidth = list(self.REL_BANDWIDTHS.keys())[self.rel_bandwidth_index]
 
     def draw_wf(self, fft, screen):
         self.waterfall_surf.scroll(0, 1)
@@ -87,7 +88,7 @@ class WaterfallDisplay(object):
         screen.blit(self.graph_surf, (self.X, self.Y), area=(0, 0, self.W, config.GRAPH_HEIGHT))
 
     def draw(self, screen):
-        total_fft_bw = (config.SAMPLE_RATE // 2)
+        total_fft_bw = (config.SAMPLE_RATE)
         if self.absmode: # absolute frequency display
             self.display_bandwidth = self.abs_freq_high - self.abs_freq_low
             self.num_fft_bins = int((total_fft_bw / self.display_bandwidth) * config.DISPLAY_W)
