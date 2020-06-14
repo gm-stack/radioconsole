@@ -18,5 +18,6 @@ RF_MAX = 500
 
 # radio
 
-CURRENT_FREQ = 7074000
+SAMPLE_PROVIDER = 'rtlsdr'
+CURRENT_FREQ = 7055000
 # this will need to be obtained from radio

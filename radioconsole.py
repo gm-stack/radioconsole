@@ -4,10 +4,8 @@ import pygame
 
 import config
 import top_bar
-import rtl_fft
 import WaterfallDisplay
-
-
+import FFTData
 
 
 if __name__ == '__main__':
@@ -17,9 +15,12 @@ if __name__ == '__main__':
 
     tb = top_bar.TopBar((0, 0, config.DISPLAY_W, config.TOP_BAR))
 
-    rf = rtl_fft.rtl_fft()
+    fftd = FFTData.FFTData(
+        provider=config.SAMPLE_PROVIDER,
+        cfg=''
+    )
     wd = WaterfallDisplay.WaterfallDisplay(
-        rf, 
+        fftd, 
         (0, config.TOP_BAR, config.DISPLAY_W, config.DISPLAY_H - config.TOP_BAR)
     )
 
@@ -28,7 +29,7 @@ if __name__ == '__main__':
             if e.type is pygame.KEYDOWN:
                 k = pygame.key.name(e.key)
                 m = pygame.key.get_mods()
-                tb.keydown(k,m) or rf.keydown(k,m) or wd.keydown(k,m)
+                tb.keydown(k,m) or wd.keydown(k,m)
             elif e.type is pygame.QUIT:
                 pygame.quit()
                 sys.exit()
