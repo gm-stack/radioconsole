@@ -2,38 +2,36 @@ import sys
 
 import pygame
 
-import config
-import top_bar
-import WaterfallDisplay
-import FFTData
-
+from config_reader import cfg
+import AppManager
+import apps
 
 if __name__ == '__main__':
     pygame.display.init()
     pygame.font.init()
-    screen = pygame.display.set_mode((config.DISPLAY_W, config.DISPLAY_H))
+    screen = pygame.display.set_mode((cfg.display.DISPLAY_W, cfg.display.DISPLAY_H))
 
-    tb = top_bar.TopBar((0, 0, config.DISPLAY_W, config.TOP_BAR))
+    sw = AppManager.appSwitcher(screen)
+    am = AppManager.appManager(sw)
 
-    fftd = FFTData.FFTData(
-        provider=config.SAMPLE_PROVIDER,
-        cfg=''
-    )
-    wd = WaterfallDisplay.WaterfallDisplay(
-        fftd, 
-        (0, config.TOP_BAR, config.DISPLAY_W, config.DISPLAY_H - config.TOP_BAR)
-    )
+    am.register_app('rtl_fft', apps.WaterfallDisplay)
+    am.register_app('gpsd', apps.gps_status)
+    am.register_app('lte_status', apps.lte_status)
 
+    am.instantiate_apps()
+    if len(sys.argv) > 1:
+        sw.switchFrontmostApp(sys.argv[1])
+
+    clock = pygame.time.Clock()
     while True:
+        time_delta = clock.tick(cfg.display.TARGET_FPS)/1000.0
         for e in pygame.event.get():
-            if e.type is pygame.KEYDOWN:
-                k = pygame.key.name(e.key)
-                m = pygame.key.get_mods()
-                tb.keydown(k,m) or wd.keydown(k,m)
-            elif e.type is pygame.QUIT:
+            if e.type is pygame.QUIT:
                 pygame.quit()
                 sys.exit()
+            sw.process_events(e)
 
-        tb.draw(screen)
-        wd.draw(screen)
+        sw.update(time_delta)
+
+        sw.draw(screen)
         pygame.display.update()

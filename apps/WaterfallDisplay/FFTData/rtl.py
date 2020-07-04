@@ -1,13 +1,12 @@
 import rtlsdr
-import config
 
 class rtlsdr_samples(object):
     def __init__(self, cfg):
         self.rtlsdr = rtlsdr.RtlSdr()
-        centre_freq = config.IF_FREQ
+        centre_freq = cfg.IF_FREQ
         self.rtlsdr.set_center_freq(centre_freq)
         print(f"tuning to {centre_freq/1000}khz")
-        self.rtlsdr.set_sample_rate(config.SAMPLE_RATE)
+        self.rtlsdr.set_sample_rate(cfg.SAMPLE_RATE)
         self.rtlsdr.set_manual_gain_enabled(True)
         self.rtlsdr.set_gain(48.0)
         self.gain_pos = 0

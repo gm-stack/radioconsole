@@ -1,0 +1,37 @@
+system:
+  display:
+    DISPLAY_W: 800
+    DISPLAY_H: 480
+    TOP_BAR_SIZE: 64
+    TARGET_FPS: 60
+  switcher:
+    BUTTONS_X: 4
+    BUTTON_H: 64
+    BUTTON_MARGIN: 2
+
+modules:
+  panadapter:
+    type: rtl_fft
+    display_name: panadapter
+    config:
+      IF_FREQ: 124488500 # 124487000 + 1500
+      SAMPLE_RATE: 1200000
+      INVERTED: true
+      GRAPH_HEIGHT: 64
+      RF_MIN: 0
+      RF_MAX: 500
+      SAMPLE_PROVIDER: random
+      CURRENT_FREQ: 7055000
+  
+  gpsd:
+    type: gpsd
+    display_name: GPS Status
+    config:
+      server: localhost:2947
+  
+  modem:
+    type: lte_status
+    display_name: 4G Status
+    config:
+      backend: test
+      line_height: 32
