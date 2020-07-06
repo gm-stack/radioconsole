@@ -1,3 +1,6 @@
+import signal
+signal.signal(signal.SIGHUP, lambda s, f: None)
+
 import sys
 
 import pygame
@@ -5,9 +8,13 @@ import pygame
 from config_reader import cfg
 import AppManager
 import apps
+import pygame_ft5406
+
+ts = pygame_ft5406.ft5406Events()
 
 if __name__ == '__main__':
     pygame.display.init()
+    ts.start()
     pygame.font.init()
     screen = pygame.display.set_mode((cfg.display.DISPLAY_W, cfg.display.DISPLAY_H))
 
@@ -28,6 +35,7 @@ if __name__ == '__main__':
         for e in pygame.event.get():
             if e.type is pygame.QUIT:
                 pygame.quit()
+                ts.stop()
                 sys.exit()
             sw.process_events(e)
 
