@@ -1,0 +1,21 @@
+# cp radioconsole.service /etc/systemd/system/
+# systemctl enable radioconsole
+# systemctl start  radioconsole
+
+[Unit]
+Description=Radioconsole GUI
+
+[Service]
+Type=simple
+WorkingDirectory=/home/pi/radioconsole/
+ExecStart=/usr/bin/python3 /home/pi/radioconsole/radioconsole.py
+Restart=always
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=radioconsole
+User=root
+Group=root
+SendSIGHUP=no
+
+[Install]
+WantedBy=multi-user.target
