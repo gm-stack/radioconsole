@@ -24,6 +24,8 @@ def safe_exit():
     ts.stop()
     sys.exit()
 
+crash_handler.register(screen, safe_exit)
+
 try:
     sw = AppManager.appSwitcher(screen)
     am = AppManager.appManager(sw)
@@ -48,4 +50,4 @@ try:
         pygame.display.update()
 
 except Exception as e:
-    crash_handler.crash(screen, safe_exit)
+    crash_handler.crash(e)

@@ -3,12 +3,12 @@ import pygame_gui
 import gps
 import threading
 
+import crash_handler
 from AppManager.app import app
 from .gps_satview import gps_satview
 
 class gps_status(app):
     gui = None
-    gpsd = None
     data_updated = False
     gps_data = {}
     ui_element_labels = {}
@@ -20,8 +20,6 @@ class gps_status(app):
     def __init__(self, bounds, config, display):
         super().__init__(bounds, config, display)
         self.gui = pygame_gui.UIManager((display.DISPLAY_W, display.DISPLAY_H))
-
-        self.gpsd = gps.gps(mode=gps.WATCH_ENABLE|gps.WATCH_NEWSTYLE)
 
         self.backend_thread = threading.Thread(target=self.backend_loop, daemon=True)
         self.backend_thread.start()
@@ -47,12 +45,13 @@ class gps_status(app):
             manager=self.gui
         )
 
+    @crash_handler.monitor_thread
     def backend_loop(self):
+        gpsd = gps.gps(mode=gps.WATCH_ENABLE|gps.WATCH_NEWSTYLE)
         while True:
-            report = self.gpsd.next()
+            report = gpsd.next()
             self.gps_data[report['class']] = report
             self.data_updated = True
-            #print(report)
         
     def draw(self, screen):
         self.gui.draw_ui(screen)
