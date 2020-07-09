@@ -6,18 +6,25 @@ import sys
 import pygame
 
 from config_reader import cfg
+
+import crash_handler
 import AppManager
 import apps
 import pygame_ft5406
 
 ts = pygame_ft5406.ft5406Events()
 
-if __name__ == '__main__':
-    pygame.display.init()
-    ts.start()
-    pygame.font.init()
-    screen = pygame.display.set_mode((cfg.display.DISPLAY_W, cfg.display.DISPLAY_H))
+pygame.display.init()
+ts.start()
+pygame.font.init()
+screen = pygame.display.set_mode((cfg.display.DISPLAY_W, cfg.display.DISPLAY_H))
 
+def safe_exit():
+    pygame.quit()
+    ts.stop()
+    sys.exit()
+
+try:
     sw = AppManager.appSwitcher(screen)
     am = AppManager.appManager(sw)
 
@@ -34,12 +41,11 @@ if __name__ == '__main__':
         time_delta = clock.tick(cfg.display.TARGET_FPS)/1000.0
         for e in pygame.event.get():
             if e.type is pygame.QUIT:
-                pygame.quit()
-                ts.stop()
-                sys.exit()
+                safe_exit()
             sw.process_events(e)
-
         sw.update(time_delta)
-
         sw.draw(screen)
         pygame.display.update()
+
+except Exception as e:
+    crash_handler.crash(screen, safe_exit)
