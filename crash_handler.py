@@ -29,37 +29,43 @@ class SubThreadExitedException(RuntimeError):
     pass
 
 do_exit = False
+subthread_tb = None
+subthread_name = None
+subthread_msg = None
 def crash(exc, is_thread=False, threadmsg=None):
-    global do_exit
-
-    if isinstance(exc, SubThreadExitedException):
-        while True:
-            time.sleep(0.1)
-            if do_exit:
-                safe_exit()
-                while True:
-                    time.sleep(0.1)
+    global subthread_tb, subthread_name, subthread_msg
 
     if is_thread:
+        subthread_tb = traceback.format_exc()
+        subthread_name = threading.currentThread().getName()
+        subthread_msg = threadmsg
         ctypes.pythonapi.PyThreadState_SetAsyncExc(
-            threading.main_thread().ident, 
+            ctypes.c_long(threading.main_thread().ident),
             ctypes.py_object(SubThreadExitedException)
         )
+        return
+
+    if isinstance(exc, SubThreadExitedException):
+        tb = subthread_tb
+        thread_name = subthread_name
+        threadmsg = subthread_msg
+    else:
+        tb = traceback.format_exc()
+        thread_name = threading.currentThread().getName()
 
     screen.fill((0,0,0))
 
     font = pygame.font.Font(None, 24)
     header = "*"*80
-    thread_name = threading.currentThread().getName()
-    
+
     if threadmsg:
         msg = f"Error: Thread \'{thread_name}\' \n"
         msg += f"{header}\n{threadmsg}\n"
     else:
         msg = f"Thread {thread_name} crashed: \n"
-        msg += f"{header}\n{traceback.format_exc()}\n"
+        msg += f"{header}\n{tb}\n"
     msg += f"{header}\n>>> Click/tap or press any key to exit... <<<"
-    
+
     print(msg, file=sys.stderr)
     lineheight = font.get_linesize()
     for i, line in enumerate(msg.splitlines()):
@@ -71,5 +77,4 @@ def crash(exc, is_thread=False, threadmsg=None):
     while True:
         for e in pygame.event.get():
             if e.type in (pygame.QUIT, pygame.MOUSEBUTTONDOWN, pygame.KEYDOWN):
-                do_exit = True
                 safe_exit()
