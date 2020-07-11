@@ -14,7 +14,7 @@ class appSwitcher(object):
     logo_size = None
 
     def __init__(self, screen):
-        self.gui = pygame_gui.UIManager((cfg.display.DISPLAY_W, cfg.display.DISPLAY_H))
+        self.gui = pygame_gui.UIManager(cfg.display.size, cfg.theme_file)
         self.top_bar = top_bar(self)
         self.screen = screen
         self.logo = pygame.image.load("logo.png")

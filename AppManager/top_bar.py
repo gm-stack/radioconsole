@@ -10,7 +10,10 @@ class top_bar(object):
     def __init__(self, sw):
         self.bounds = (0, 0, cfg.display.DISPLAY_W, cfg.display.TOP_BAR_SIZE)
         self.switcher = sw
-        self.gui = pygame_gui.UIManager((cfg.display.DISPLAY_W, cfg.display.TOP_BAR_SIZE))
+        self.gui = pygame_gui.UIManager(
+            (cfg.display.DISPLAY_W, cfg.display.TOP_BAR_SIZE),
+            cfg.theme_file
+        )
         self.appname_label = pygame_gui.elements.UIButton(
             relative_rect=pygame.Rect(2, 2, 128, cfg.display.TOP_BAR_SIZE-4),
             text='switcher',

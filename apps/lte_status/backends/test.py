@@ -2,7 +2,7 @@ import random
 from . import rooter_webif
 
 class TestBackend(object):
-    # pylint: disable=line-too-long
+    # pylint: disable=line-too-long, too-few-public
     responses = [
         """{"cidn":"  (16)","cops":"Telstra Mobile Telstra","host":"1","rscp":"-80 (RSRP) dBm","cell":"2","rncn":" (533940)","cid":"10","netmode":"UP (+) (using Ping Test)","proto":"MBIM","up":"-","rnc":"825B4","mnc":" 01","imei":"x","imsi":"y","per":"100%","rssi":">= -51 dBm","modtype":"2","port":"/dev/ttyUSB2","mode":"LTE","phonen":"*","iccid":"z","modid":"1199 : 9071","lac":"3002","mcc":"505","ecio1":" ","phone":"","crate":"Fast (updated every 10 seconds)","lband":"B7 (Bandwidth 20 MHz)","modem":" Sierra Wireless, Incorporated MC7430","lacn":"  (12290)","rscp1":" ","csq":"31","channel":"3148","conntype":"Modem #1","tempur":"32.00°C","down":"-","ecio":"-10.2 (RSRQ) dB"}""",
         """{"cidn":"  (16)","cops":"Telstra Mobile Telstra","host":"1","rscp":"-74 (RSRP) dBm","cell":"2","rncn":" (533940)","cid":"10","netmode":"UP (-) (using Ping Test)","proto":"MBIM","up":"-","rnc":"825B4","mnc":" 01","imei":"x","imsi":"y","per":"100%","rssi":">= -51 dBm","modtype":"2","port":"/dev/ttyUSB2","mode":"LTE","phonen":"*","iccid":"z","modid":"1199 : 9071","lac":"3002","mcc":"505","ecio1":" ","phone":"","crate":"Fast (updated every 10 seconds)","lband":"B7 (Bandwidth 20 MHz)","modem":" Sierra Wireless, Incorporated MC7430","lacn":"  (12290)","rscp1":" ","csq":"31","channel":"3148","conntype":"Modem #1","tempur":"32.00°C","down":"-","ecio":"-9.1 (RSRQ) dB"}""",

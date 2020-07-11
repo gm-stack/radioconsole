@@ -18,7 +18,7 @@ ts = pygame_ft5406.ft5406Events()
 pygame.display.init()
 ts.start()
 pygame.font.init()
-screen = pygame.display.set_mode((cfg.display.DISPLAY_W, cfg.display.DISPLAY_H))
+screen = pygame.display.set_mode(cfg.display.size)
 
 def safe_exit():
     pygame.quit()

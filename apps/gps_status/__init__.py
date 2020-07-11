@@ -4,6 +4,7 @@ import pygame_gui
 import gps
 
 import crash_handler
+from config_reader import cfg
 from AppManager.app import app
 from .gps_satview import gps_satview
 
@@ -19,7 +20,7 @@ class gps_status(app):
 
     def __init__(self, bounds, config, display):
         super().__init__(bounds, config, display)
-        self.gui = pygame_gui.UIManager((display.DISPLAY_W, display.DISPLAY_H))
+        self.gui = pygame_gui.UIManager(cfg.display.size, cfg.theme_file)
 
         self.backend_thread = threading.Thread(target=self.backend_loop, daemon=True)
         self.backend_thread.start()
