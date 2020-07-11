@@ -1,7 +1,10 @@
 import pygame
 from pygame import surface
+import pygame_gui
 
 from AppManager.app import app
+
+from config_reader import cfg
 
 from . import turbo_colormap
 from . import FFTData
@@ -20,6 +23,57 @@ class WaterfallDisplay(app):
     def __init__(self, bounds, config, display):
         super().__init__(bounds, config, display)
 
+        self.decimate_zoom = True
+
+        self.gui = pygame_gui.UIManager(cfg.display.size, cfg.theme_file)
+
+        BUTTON_Y = cfg.display.DISPLAY_H - self.config.BUTTON_HEIGHT
+        self.button_zoom_in = pygame_gui.elements.UIButton(
+            relative_rect=pygame.Rect(
+                0, BUTTON_Y,
+                128, self.config.BUTTON_HEIGHT
+            ),
+            text="Zoom In",
+            manager=self.gui
+        )
+        self.button_zoom_out = pygame_gui.elements.UIButton(
+            relative_rect=pygame.Rect(
+                128, BUTTON_Y,
+                128, self.config.BUTTON_HEIGHT
+            ),
+            text="Zoom Out",
+            manager=self.gui
+        )
+        self.button_absmode = pygame_gui.elements.UIButton(
+            relative_rect=pygame.Rect(
+                cfg.display.DISPLAY_W - 128,
+                BUTTON_Y,
+                128, self.config.BUTTON_HEIGHT
+            ),
+            text="Relative Mode",
+            manager=self.gui
+        )
+        self.button_zoommode = pygame_gui.elements.UIButton(
+            relative_rect=pygame.Rect(
+                cfg.display.DISPLAY_W - 256,
+                BUTTON_Y,
+                128, self.config.BUTTON_HEIGHT
+            ),
+            text="FFT Zoom",
+            manager=self.gui
+        )
+        if self.decimate_zoom:
+            # preserve text when disabled as FFT Zoom
+            self.button_zoommode.set_text("Decimate Zoom")
+        self.label_status = pygame_gui.elements.UILabel(
+            relative_rect=pygame.Rect(
+                256, BUTTON_Y,
+                cfg.display.DISPLAY_W - 512, self.config.BUTTON_HEIGHT
+            ),
+            text='',
+            manager=self.gui
+        )
+
         fftd = FFTData.FFTData(
             provider=config.SAMPLE_PROVIDER,
             config=config
@@ -27,7 +81,7 @@ class WaterfallDisplay(app):
 
         self.X, self.Y, self.W, self.H = bounds
         self.WF_Y = self.Y + self.config.GRAPH_HEIGHT
-        self.WF_H = self.H - self.config.GRAPH_HEIGHT
+        self.WF_H = self.H - self.config.GRAPH_HEIGHT - self.config.BUTTON_HEIGHT
 
         self.waterfall_surf = surface.Surface((self.W, self.WF_H))
         self.graph_surf = surface.Surface((self.W, self.config.GRAPH_HEIGHT))
@@ -43,13 +97,37 @@ class WaterfallDisplay(app):
         self.rel_bandwidth_index = 0
         self.rel_bandwidth = list(self.REL_BANDWIDTHS.keys())[self.rel_bandwidth_index]
 
-        self.decimate_zoom = True
-
     def update(self, dt):
-        pass
+        self.gui.update(dt)
 
     def process_events(self, e):
-        pass
+        self.gui.process_events(e)
+        if e.type == pygame.USEREVENT and e.user_type == pygame_gui.UI_BUTTON_PRESSED:
+            if e.ui_element == self.button_zoom_in:
+                self.rel_bandwidth_index += 1
+                rel_bw_list = list(self.REL_BANDWIDTHS.keys())
+                self.rel_bandwidth = rel_bw_list[self.rel_bandwidth_index % len(self.REL_BANDWIDTHS)]
+            elif e.ui_element == self.button_zoom_out:
+                self.rel_bandwidth_index -= 1
+                rel_bw_list = list(self.REL_BANDWIDTHS.keys())
+                self.rel_bandwidth = rel_bw_list[self.rel_bandwidth_index % len(self.REL_BANDWIDTHS)]
+            elif e.ui_element == self.button_absmode:
+                self.absmode = not self.absmode
+                if self.absmode:
+                    self.button_absmode.set_text("Absolute Mode")
+                    self.button_zoom_in.disable()
+                    self.button_zoom_out.disable()
+                    self.button_zoommode.disable()
+                else:
+                    self.button_absmode.set_text("Relative Mode")
+                    self.button_zoom_in.enable()
+                    self.button_zoom_out.enable()
+                    self.button_zoommode.enable()
+            elif e.ui_element == self.button_zoommode:
+                self.decimate_zoom = not self.decimate_zoom
+                self.button_zoommode.set_text(
+                    "Decimate Zoom" if self.decimate_zoom else "FFT Zoom"
+                )
 
     def draw_wf(self, fft, screen):
         self.waterfall_surf.scroll(0, 1)
@@ -90,7 +168,7 @@ class WaterfallDisplay(app):
         screen.blit(text, (text_x, self.Y))
 
         if x > 0 and x < self.bounds.w:
-            pygame.draw.line(screen, line_colour, (x, self.Y + text_h), (x, self.Y + self.H))
+            pygame.draw.line(screen, line_colour, (x, self.Y + text_h), (x, self.Y + self.config.GRAPH_HEIGHT + self.WF_H))
 
     def fade(self):
         # this is too slow to use
@@ -161,6 +239,7 @@ class WaterfallDisplay(app):
 
         self.draw_wf(fft, screen)
         self.draw_graph(fft, screen)
+        self.gui.draw_ui(screen)
 
         if self.absmode:
             self.draw_marker(self.config.CURRENT_FREQ, screen, highlight=True)
@@ -173,7 +252,6 @@ class WaterfallDisplay(app):
             #for m in self.REL_BANDWIDTHS[self.rel_bandwidth]:
             #    self.draw_marker(config.CURRENT_FREQ + m, screen, relative=True)
             #    self.draw_marker(config.CURRENT_FREQ - m, screen, relative=True)
-
 
     def keydown(self, k, m):
         if k == 'up' and not m & pygame.KMOD_SHIFT:
@@ -191,21 +269,5 @@ class WaterfallDisplay(app):
         if k == 'down' and (m & pygame.KMOD_SHIFT):
             self.config.RF_MIN -= 10
             print(f"rf_min: {self.config.RF_MIN}")
-            return True
-        if k == 'r':
-            self.absmode = not self.absmode
-            return True
-        if k == 'left':
-            self.rel_bandwidth_index -= 1
-            rel_bw_list = list(self.REL_BANDWIDTHS.keys())
-            self.rel_bandwidth = rel_bw_list[self.rel_bandwidth_index % len(self.REL_BANDWIDTHS)]
-            return True
-        if k == 'right':
-            self.rel_bandwidth_index += 1
-            rel_bw_list = list(self.REL_BANDWIDTHS.keys())
-            self.rel_bandwidth = rel_bw_list[self.rel_bandwidth_index % len(self.REL_BANDWIDTHS)]
-            return True
-        if k == 'z':
-            self.decimate_zoom = not self.decimate_zoom
             return True
         return False
