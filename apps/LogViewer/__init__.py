@@ -41,45 +41,20 @@ class LogViewer(app):
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         ssh.connect('172.16.0.49', username='pi', port=22)
 
-        #stdin, stdout, stderr = ssh.exec_command("journalctl -xf", get_pty=False)
         tran = ssh.get_transport()
         chan = tran.open_session()
-
-        bufsize = -1
-        stdin = chan.makefile('wb', bufsize)
-        stdout = chan.makefile('rb', bufsize)
-        stderr = chan.makefile_stderr('rb', bufsize)
+        chan.set_combine_stderr(True)
+        stdout = chan.makefile('rb', -1)
 
         chan.exec_command('journalctl -xf')
 
-
-
-        stdout_closed = False
-        stderr_closed = False
-        print(stdin)
-        print(stdout)
-        print(stderr)
-        while not (stdout_closed and stderr_closed):
-            r, _, _ = select.select([stdout.channel, stderr.channel], [], [])
-
-            if stdout.channel in r:
-                out = stdout.channel.recv(1)
-                bytes_read = len(out)
-                print(f"out {bytes_read}")
-                self.logtext += f"<font color='#00FF00'>{self.escape_text(out.decode('UTF-8'))}</font>"
-                self.log_updated = True
-                if bytes_read == 0:
-                    stdout_closed = True
-
-
-            if stderr.channel in r:
-                out = stderr.channel.recv(1)
-                bytes_read = len(out)
-                print(f"err {bytes_read}")
-                self.logtext += f"<font color='#FF0000'>{self.escape_text(out.decode('UTF-8'))}</font>"
-                self.log_updated = True
-                if bytes_read == 0:
-                    stderr_closed = True
+        while True:
+            out = stdout.channel.recv(1)
+            bytes_read = len(out)
+            self.logtext += f"<font color='#00FF00'>{self.escape_text(out.decode('UTF-8'))}</font>"
+            self.log_updated = True
+            if bytes_read == 0:
+                break
 
         ss = stdout.channel.recv_exit_status()
         self.logtext += f"\n------\ndone {ss}"
