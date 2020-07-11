@@ -18,6 +18,7 @@ modules:
       SAMPLE_RATE: 1200000
       INVERTED: true
       GRAPH_HEIGHT: 64
+      BUTTON_HEIGHT: 48
       RF_MIN: 0
       RF_MAX: 500
       SAMPLE_PROVIDER: random
