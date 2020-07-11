@@ -1,5 +1,6 @@
 import signal
 signal.signal(signal.SIGHUP, lambda s, f: None)
+# pylint: disable=wrong-import-position
 
 import sys
 
@@ -49,5 +50,6 @@ try:
         sw.draw(screen)
         pygame.display.update()
 
+# pylint: disable=broad-except
 except Exception as e:
     crash_handler.crash(e)

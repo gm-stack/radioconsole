@@ -1,5 +1,5 @@
-import requests
 import json
+import requests
 
 from .. import channel_info
 
@@ -8,21 +8,21 @@ class RooterBackend(object):
         print("logging in...")
         r = requests.post('http://172.17.0.254/cgi-bin/luci/admin/login')
         #login_cookie = r.cookies
-        #login_cookie = 
+        #login_cookie =
 
     def fetch_stats(self):
         cookies = {
-            'sysauth': '694549bc88370c5ac37726c4e46c555d' 
+            'sysauth': '694549bc88370c5ac37726c4e46c555d'
         }
         r = requests.get('http://172.17.0.254/cgi-bin/luci/admin/modem/get_csq', cookies=cookies)
         r.raise_for_status()
         return self.parse(r.text)
-    
+
     @classmethod
     def parse_band(cls, band):
         band = band.split(" ")
         return band[0], int(band[2])
-    
+
     @classmethod
     def parse_bands_ch(cls, bands, earfcns):
         bandlist = bands.split(" aggregated with:<br />")

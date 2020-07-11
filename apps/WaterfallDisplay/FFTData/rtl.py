@@ -12,10 +12,9 @@ class rtlsdr_samples(object):
         self.gain_pos = 0
 
         print(f"tuner is {self.rtlsdr.get_tuner_type()}")
-    
+
     def get_samples(self, n_samples):
-        nsamples_pwr2 = 2**(n_samples - 1).bit_length() 
+        nsamples_pwr2 = 2**(n_samples - 1).bit_length()
         # smallest power of 2 > num_samples, as sample reads can only be a power of 2
         # read power of 2 and throw away everything after requested length
         return self.rtlsdr.read_samples(nsamples_pwr2)[:n_samples]
-

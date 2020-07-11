@@ -1,4 +1,4 @@
-from . import band_table 
+from . import band_table
 
 bt = {b['band']: b for b in band_table.bands}
 
@@ -19,14 +19,14 @@ def add_channel_info(conn_info):
 
 def band_name(band):
     bandnum = int(band[1:]) # drop the initial 'B'
-    return "{} {}".format(band,bt[bandnum]['name'])
+    return "{} {}".format(band, bt[bandnum]['name'])
 
 def earfcn_to_freq(earfcn):
     if 18000 <= earfcn <= 35999:
         for b in band_table.bands:
             if b['NUL_Min'] <= earfcn <= b['NUL_Max']:
                 base_earfcn = earfcn - b['NUL_Min']
-                return b['FUL_Low'] + (0.1 * base_earfcn)	
+                return b['FUL_Low'] + (0.1 * base_earfcn)
     else:
         for b in band_table.bands:
             if b['NDL_Min'] <= earfcn <= b['NDL_Max']:

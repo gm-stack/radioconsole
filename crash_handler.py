@@ -2,7 +2,6 @@ import traceback
 import threading
 import sys
 import ctypes
-import time
 import inspect
 
 import pygame
@@ -15,9 +14,11 @@ def register(scr, ex):
     screen = scr
     safe_exit = ex
 
+# pylint: disable=broad-except
 def monitor_thread(func):
     def wrapper(self):
-        funcdesc = f"Thread exited: \n  File \"{inspect.getfile(func)}\", line {func.__code__.co_firstlineno}, in {func.__name__}"
+        funcdesc = f"Thread exited: \n  File \"{inspect.getfile(func)}\"," \
+            f" line {func.__code__.co_firstlineno}, in {func.__name__}"
         try:
             func(self)
             crash(None, is_thread=True, threadmsg=funcdesc)
@@ -53,9 +54,9 @@ def crash(exc, is_thread=False, threadmsg=None):
         tb = traceback.format_exc()
         thread_name = threading.currentThread().getName()
 
-    screen.fill((0,0,0))
+    screen.fill((0, 0, 0))
 
-    font = pygame.font.Font(None, 24)
+    font = pygame.font.Font("ttf/FiraCode-Regular.ttf", 14)
     header = "*"*80
 
     if threadmsg:
@@ -69,8 +70,8 @@ def crash(exc, is_thread=False, threadmsg=None):
     print(msg, file=sys.stderr)
     lineheight = font.get_linesize()
     for i, line in enumerate(msg.splitlines()):
-        text = font.render(line, True, (255,0,0))
-        screen.blit(text, (0,i*lineheight))
+        text = font.render(line, True, (255, 0, 0))
+        screen.blit(text, (8, 8+(i*lineheight)))
 
     pygame.display.update()
 

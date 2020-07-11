@@ -1,6 +1,7 @@
-import yaml
 import os
 from types import SimpleNamespace
+
+import yaml
 
 currpath = os.path.dirname(os.path.realpath(__file__))
 with open(os.path.join(currpath, 'config.yaml')) as f:

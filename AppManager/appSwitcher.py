@@ -72,9 +72,10 @@ class appSwitcher(object):
         print(f"switching to {appname}")
         self.FRONTMOST_APP = appname
         self.top_bar.updateAppLabel(appname)
-        self.screen.fill((0,0,0))
+        self.screen.fill((0, 0, 0))
         if appname == 'switcher':
             self.screen.blit(
                 self.logo,
-                (cfg.display.DISPLAY_W - self.logo_size[0], cfg.display.DISPLAY_H - self.logo_size[1])
+                (cfg.display.DISPLAY_W - self.logo_size[0],
+                 cfg.display.DISPLAY_H - self.logo_size[1])
             )
