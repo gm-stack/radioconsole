@@ -26,6 +26,9 @@ class FFTData(object):
         self.fft_output = None
         self.fftw = None
 
+        self.last_window_size = None
+        self.window = None
+
     def fft(self, num_bins, decimate=1):
         if self.last_fft_bins != num_bins:
             print(f"creating new FFTW object: {num_bins} bins")
@@ -34,7 +37,14 @@ class FFTData(object):
             self.fft_output = pyfftw.empty_aligned(num_bins, dtype='complex128')
             self.fftw = pyfftw.FFTW(self.fft_input, self.fft_output)
 
-        signal = self.provider.get_samples(num_bins*decimate)
+        num_samples = num_bins * decimate
+
+        if self.last_window_size != num_samples:
+            print(f"creating new window function: n={num_samples}")
+            self.window = scipy.signal.windows.hann(num_samples, sym=False)
+            self.last_window_size = num_samples
+
+        signal = self.provider.get_samples(num_samples) * self.window
         if decimate == 1:
             self.fft_input[:] = signal
         else:

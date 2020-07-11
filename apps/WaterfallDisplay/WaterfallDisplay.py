@@ -67,8 +67,8 @@ class WaterfallDisplay(app):
             self.button_zoommode.set_text("Decimate Zoom")
         self.label_status = pygame_gui.elements.UILabel(
             relative_rect=pygame.Rect(
-                256, BUTTON_Y,
-                cfg.display.DISPLAY_W - 512, self.config.BUTTON_HEIGHT
+                256 + 1, BUTTON_Y + 1,
+                cfg.display.DISPLAY_W - 512 - 2, self.config.BUTTON_HEIGHT - 2
             ),
             text='',
             manager=self.gui
@@ -96,9 +96,17 @@ class WaterfallDisplay(app):
 
         self.rel_bandwidth_index = 0
         self.rel_bandwidth = list(self.REL_BANDWIDTHS.keys())[self.rel_bandwidth_index]
+        self.update_status()
 
     def update(self, dt):
         self.gui.update(dt)
+
+    def update_status(self):
+        if self.rel_bandwidth > 1000000:
+            relbw = f"{self.rel_bandwidth/1000000}M"
+        else:
+            relbw = f"{self.rel_bandwidth/1000}k"
+        self.label_status.set_text(f"BW: {relbw}")
 
     def process_events(self, e):
         self.gui.process_events(e)
@@ -107,10 +115,12 @@ class WaterfallDisplay(app):
                 self.rel_bandwidth_index += 1
                 rel_bw_list = list(self.REL_BANDWIDTHS.keys())
                 self.rel_bandwidth = rel_bw_list[self.rel_bandwidth_index % len(self.REL_BANDWIDTHS)]
+                self.update_status()
             elif e.ui_element == self.button_zoom_out:
                 self.rel_bandwidth_index -= 1
                 rel_bw_list = list(self.REL_BANDWIDTHS.keys())
                 self.rel_bandwidth = rel_bw_list[self.rel_bandwidth_index % len(self.REL_BANDWIDTHS)]
+                self.update_status()
             elif e.ui_element == self.button_absmode:
                 self.absmode = not self.absmode
                 if self.absmode:
