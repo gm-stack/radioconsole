@@ -39,16 +39,17 @@ class FFTData(object):
 
         num_samples = num_bins * decimate
 
-        if self.last_window_size != num_samples:
-            print(f"creating new window function: n={num_samples}")
-            self.window = scipy.signal.windows.hann(num_samples, sym=False)
-            self.last_window_size = num_samples
+        if self.last_window_size != num_bins:
+            print(f"creating new window function: n={num_bins}")
+            self.window = scipy.signal.windows.hann(num_bins, sym=False)
+            self.last_window_size = num_bins
 
-        signal = self.provider.get_samples(num_samples) * self.window
+        signal = self.provider.get_samples(num_samples)
         if decimate == 1:
+            signal *= self.window
             self.fft_input[:] = signal
         else:
-            self.fft_input[:] = scipy.signal.decimate(signal, decimate, zero_phase=False)
+            self.fft_input[:] = scipy.signal.decimate(signal, decimate, zero_phase=False) * self.window
         self.fftw()
         fft = np.fft.fftshift(self.fft_output)
         fft = np.absolute(fft)
