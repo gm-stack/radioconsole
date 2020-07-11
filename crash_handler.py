@@ -26,6 +26,14 @@ def monitor_thread(func):
             crash(e, is_thread=True)
     return wrapper
 
+def monitor_thread_exception(func):
+    def wrapper(self):
+        try:
+            func(self)
+        except Exception as e:
+            crash(e, is_thread=True)
+    return wrapper
+
 class SubThreadExitedException(RuntimeError):
     pass
 

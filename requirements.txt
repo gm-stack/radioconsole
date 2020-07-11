@@ -5,3 +5,4 @@ pyfftw
 pyyaml
 pygame_gui
 gps
+paramiko

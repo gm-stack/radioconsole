@@ -34,6 +34,7 @@ try:
     am.register_app('rtl_fft', apps.WaterfallDisplay)
     am.register_app('gpsd', apps.gps_status)
     am.register_app('lte_status', apps.lte_status)
+    am.register_app('log_viewer', apps.LogViewer)
 
     am.instantiate_apps()
     if len(sys.argv) > 1:
