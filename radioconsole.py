@@ -35,6 +35,7 @@ try:
     am.register_app('gpsd', apps.gps_status)
     am.register_app('lte_status', apps.lte_status)
     am.register_app('log_viewer', apps.LogViewer)
+    am.register_app('raspi_status', apps.RaspiStatus)
 
     am.instantiate_apps()
     if len(sys.argv) > 1:
