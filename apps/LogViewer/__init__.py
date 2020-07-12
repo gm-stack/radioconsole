@@ -138,7 +138,7 @@ class LogViewer(app):
                     ch.exec_command(cmd)
 
                     while True:
-                        out = stdout.channel.recv(1)
+                        out = stdout.channel.recv(1024)
                         if not out:
                             break
                         else:
