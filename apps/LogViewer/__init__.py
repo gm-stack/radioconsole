@@ -70,30 +70,38 @@ class LogViewer(app):
 
     @staticmethod
     def esc(text):
-        return html.escape(text).replace("\r\n","\n").replace("\r","\n").replace("\n", "<br>")
+        return html.escape(text)\
+            .replace("\r\n", "\n")\
+            .replace("\r", "\n")\
+            .replace("\n", "<br>")
 
     def clear_console(self):
         self.logtext = ""
         self.log_updated = True
 
+    def trim_scrollback(self):
+        if len(self.logtext) > self.config.max_scrollback:
+            self.logtext = self.logtext[-self.config.max_scrollback:]
+            self.logtext = self.logtext.split('<br>', 1)[-1]
+
     def status_message(self, text):
         self.logtext += f"<font color='#0077FF'><b>{self.esc(text)}</b></font><br>"
-        self.logtext = self.logtext[-self.config.max_scrollback:]
+        self.trim_scrollback()
         self.log_updated = True
 
     def error_message(self, text):
         self.logtext += f"<font color='#FF0000'><b>{self.esc(text)}</b></font><br>"
-        self.logtext = self.logtext[-self.config.max_scrollback:]
+        self.trim_scrollback()
         self.log_updated = True
 
     def console_message(self, text):
         self.logtext += self.esc(text)
-        self.logtext = self.logtext[-self.config.max_scrollback:]
+        self.trim_scrollback()
         self.log_updated = True
 
     def console_message_onceonly(self, text):
         self.logtext += f"<font color='#FFFFFF'>{self.esc(text)}</font>"
-        self.logtext = self.logtext[-self.config.max_scrollback:]
+        self.trim_scrollback()
         self.log_updated = True
 
     @crash_handler.monitor_thread
