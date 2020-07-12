@@ -35,37 +35,79 @@ class LogViewer(app):
         self.backend_thread = threading.Thread(target=self.backend_loop, daemon=True)
         self.backend_thread.start()
 
+    @staticmethod
+    def esc(text):
+        return html.escape(text).replace("\r\n","\n").replace("\r","\n").replace("\n", "<br>")
+
+    def clear_console(self):
+        self.logtext = ""
+        self.log_updated = True
+
+    def status_message(self, text):
+        self.logtext += f"<font color='#0077FF'><b>{self.esc(text)}</b></font><br>"
+        self.logtext = self.logtext[-self.config.max_scrollback:]
+        self.log_updated = True
+
+    def error_message(self, text):
+        self.logtext += f"<font color='#FF0000'><b>{self.esc(text)}</b></font><br>"
+        self.logtext = self.logtext[-self.config.max_scrollback:]
+        self.log_updated = True
+
+    def console_message(self, text):
+        self.logtext += self.esc(text)
+        self.logtext = self.logtext[-self.config.max_scrollback:]
+        self.log_updated = True
+
     @crash_handler.monitor_thread
     def backend_loop(self):
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        ssh.connect('172.16.0.49', username='pi', port=22)
-
-        tran = ssh.get_transport()
-        chan = tran.open_session()
-        chan.set_combine_stderr(True)
-        stdout = chan.makefile('rb', -1)
-
-        chan.exec_command('journalctl -xf')
 
         while True:
-            out = stdout.channel.recv(1)
-            bytes_read = len(out)
-            self.logtext += f"<font color='#00FF00'>{self.escape_text(out.decode('UTF-8'))}</font>"
-            self.log_updated = True
-            if bytes_read == 0:
-                break
+            try:
+                self.status_message(f"ssh {self.config.username}@{self.config.host}:{self.config.port}")
+                ssh.connect(
+                    self.config.host,
+                    username=self.config.username,
+                    port=self.config.port,
+                    timeout=5,
+                    banner_timeout=10
+                )
 
-        ss = stdout.channel.recv_exit_status()
-        self.logtext += f"\n------\ndone {ss}"
-        self.log_updated = True
+                ts = ssh.get_transport()
 
-        while True:
-            time.sleep(30)
+                while True:
+                    ch = ts.open_session()
+                    ch.set_combine_stderr(True)
+                    stdout = ch.makefile('rb', -1)
 
-    @staticmethod
-    def escape_text(text):
-        return html.escape(text).replace("\r\n","\n").replace("\r","\n").replace("\n", "<br>")
+                    self.status_message(f"$ {self.config.command}\n")
+                    ch.exec_command(self.config.command)
+
+                    while True:
+                        out = stdout.channel.recv(1)
+                        if not out:
+                            break
+                        else:
+                            self.console_message(out.decode('UTF-8'))
+
+                    exit_status = stdout.channel.recv_exit_status()
+                    msg = f"\nCommand exited with status {exit_status}, "\
+                        f"retrying in {self.config.retry_seconds}s"
+                    if exit_status == 0:
+                        self.status_message(msg)
+                    else:
+                        self.error_message(msg)
+
+                    time.sleep(self.config.retry_seconds)
+            except OSError as e:
+                self.error_message(f"\nConnection error: {str(e)}, " \
+                    f"retrying in {self.config.retry_seconds}s")
+            except paramiko.SSHException as e:
+                self.error_message(f"\nSSH error: {str(e)}, " \
+                    f"retrying in {self.config.retry_seconds}s")
+
+            time.sleep(self.config.retry_seconds)
 
     def draw(self, screen):
         self.gui.draw_ui(screen)
