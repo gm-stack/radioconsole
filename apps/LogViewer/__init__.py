@@ -1,3 +1,4 @@
+import math
 import html
 import threading
 import time
@@ -19,6 +20,33 @@ class LogViewer(app):
         self.gui = pygame_gui.UIManager(cfg.display.size, cfg.theme_file)
         # todo: maybe use this in app class...
 
+        self.command_buttons = {}
+
+        def createCommandButton(command_name):
+            total_padding = (config.command_buttons_x + 1) * config.command_button_margin
+            button_w = (cfg.display.DISPLAY_W - total_padding) // config.command_buttons_x
+            button_num = len(self.command_buttons)
+            button_col = button_num % config.command_buttons_x
+            button_row = button_num // config.command_buttons_x
+
+            self.command_buttons[command_name] = pygame_gui.elements.UIButton(
+                relative_rect=pygame.Rect(
+                    config.command_button_margin + ((button_w + config.command_button_margin) * button_col),
+                    cfg.display.DISPLAY_H - config.command_button_margin -
+                        ((config.command_button_h + config.command_button_margin) * (button_row + 1)),
+                    button_w,
+                    config.command_button_h
+                ),
+                text=command_name,
+                manager=self.gui
+            )
+
+        for command_name in config.commands:
+            createCommandButton(command_name)
+
+        buttons_h = (config.command_button_h + config.command_button_margin) * \
+            int(math.ceil(len(config.commands) / config.command_buttons_x))
+
         self.logtext = ""
         self.log_updated = True
 
@@ -27,13 +55,18 @@ class LogViewer(app):
             relative_rect=pygame.Rect(
                 0, cfg.display.TOP_BAR_SIZE,
                 cfg.display.DISPLAY_W,
-                cfg.display.DISPLAY_H - cfg.display.TOP_BAR_SIZE
+                cfg.display.DISPLAY_H - cfg.display.TOP_BAR_SIZE - \
+                    buttons_h - config.command_button_margin
             ),
             manager=self.gui
         )
 
-        self.backend_thread = threading.Thread(target=self.backend_loop, daemon=True)
+        self.backend_thread = threading.Thread(
+            target=self.backend_loop,
+            daemon=True
+        )
         self.backend_thread.start()
+
 
     @staticmethod
     def esc(text):
@@ -58,8 +91,20 @@ class LogViewer(app):
         self.logtext = self.logtext[-self.config.max_scrollback:]
         self.log_updated = True
 
+    def console_message_onceonly(self, text):
+        self.logtext += f"<font color='#FFFFFF'>{self.esc(text)}</font>"
+        self.logtext = self.logtext[-self.config.max_scrollback:]
+        self.log_updated = True
+
     @crash_handler.monitor_thread
     def backend_loop(self):
+        self.run_command(cmd=self.config.command, onceonly=False)
+
+    @crash_handler.monitor_thread_exception
+    def run_command_thread(self, cmd):
+        self.run_command(cmd=cmd, onceonly=True)
+
+    def run_command(self, cmd='', onceonly=False):
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
@@ -81,32 +126,37 @@ class LogViewer(app):
                     ch.set_combine_stderr(True)
                     stdout = ch.makefile('rb', -1)
 
-                    self.status_message(f"$ {self.config.command}\n")
-                    ch.exec_command(self.config.command)
+                    self.status_message(f"$ {cmd}\n")
+                    ch.exec_command(cmd)
 
                     while True:
                         out = stdout.channel.recv(1)
                         if not out:
                             break
                         else:
-                            self.console_message(out.decode('UTF-8'))
+                            out_text = out.decode('UTF-8')
+                            self.console_message_onceonly(out_text) if onceonly else self.console_message(out_text)
 
                     exit_status = stdout.channel.recv_exit_status()
-                    msg = f"\nCommand exited with status {exit_status}, "\
-                        f"retrying in {self.config.retry_seconds}s"
+                    msg = f"\nCommand exited with status {exit_status}"
+                    if not onceonly:
+                        msg += f", retrying in {self.config.retry_seconds}s"
                     if exit_status == 0:
                         self.status_message(msg)
                     else:
                         self.error_message(msg)
 
-                    time.sleep(self.config.retry_seconds)
+                    if onceonly:
+                        return
             except OSError as e:
-                self.error_message(f"\nConnection error: {str(e)}, " \
-                    f"retrying in {self.config.retry_seconds}s")
+                self.error_message(f"\nConnection error: {str(e)}, "
+                    + f"retrying in {self.config.retry_seconds}s" if onceonly else '')
             except paramiko.SSHException as e:
-                self.error_message(f"\nSSH error: {str(e)}, " \
-                    f"retrying in {self.config.retry_seconds}s")
+                self.error_message(f"\nSSH error: {str(e)}, "
+                    + f"retrying in {self.config.retry_seconds}s" if onceonly else '')
 
+            if onceonly:
+                return
             time.sleep(self.config.retry_seconds)
 
     def draw(self, screen):
@@ -139,3 +189,15 @@ class LogViewer(app):
 
     def process_events(self, e):
         self.gui.process_events(e)
+        if e.type == pygame.USEREVENT and e.user_type == pygame_gui.UI_BUTTON_PRESSED:
+            if e.ui_element in self.command_buttons.values():
+                print(e.ui_element.text)
+                print(self.config.commands[e.ui_element.text])
+
+                th = threading.Thread(
+                    target=self.run_command_thread,
+                    args=[self.config.commands[e.ui_element.text]],
+                    daemon=True
+                )
+                th.start()
+                print("started thread")

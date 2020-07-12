@@ -27,9 +27,9 @@ def monitor_thread(func):
     return wrapper
 
 def monitor_thread_exception(func):
-    def wrapper(self):
+    def wrapper(self, *args, **kwargs):
         try:
-            func(self)
+            func(self, *args, **kwargs)
         except Exception as e:
             crash(e, is_thread=True)
     return wrapper
