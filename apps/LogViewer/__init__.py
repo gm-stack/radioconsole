@@ -199,13 +199,11 @@ class LogViewer(app):
         self.gui.process_events(e)
         if e.type == pygame.USEREVENT and e.user_type == pygame_gui.UI_BUTTON_PRESSED:
             if e.ui_element in self.command_buttons.values():
-                print(e.ui_element.text)
-                print(self.config.commands[e.ui_element.text])
-
+                command = self.config.commands[e.ui_element.text]
+                self.status_message(f">>> {command}")
                 th = threading.Thread(
                     target=self.run_command_thread,
-                    args=[self.config.commands[e.ui_element.text]],
+                    args=[command],
                     daemon=True
                 )
                 th.start()
-                print("started thread")
