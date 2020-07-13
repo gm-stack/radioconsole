@@ -16,8 +16,6 @@ class RaspiStatus(app):
     def __init__(self, bounds, config, display):
         super().__init__(bounds, config, display)
 
-        self.gui = pygame_gui.UIManager(cfg.display.size, cfg.theme_file)
-
         y = display.TOP_BAR_SIZE
 
         def create_ui_elements(l):
@@ -40,7 +38,6 @@ class RaspiStatus(app):
         create_ui_elements(['model', 'hostname', 'clock_arm', 'throttled', 'volts_core', 'temp', 'undervolt', 'freqcap', 'core_throttled', 'templimit'])
 
         self.data = {}
-        self.data_updated = False
 
         self.backend_thread = threading.Thread(
             target=self.run_command,
@@ -48,12 +45,9 @@ class RaspiStatus(app):
         )
         self.backend_thread.start()
 
-    def draw(self, screen):
-        self.gui.draw_ui(screen)
-
     def parse_vc_throttle_status(self, status):
         if not status:
-            return
+            return {}
         status = int(status.split('=')[1],16)
 
         undervolt = bool(status & 0x1)
@@ -82,11 +76,7 @@ class RaspiStatus(app):
             for key, gui in self.ui_element_values.items():
                 gui.set_text(self.data.get(key, ''))
 
-            self.data_updated = False
-        self.gui.update(dt)
-
-    def process_events(self, e):
-        self.gui.process_events(e)
+        super().update(dt)
 
     @crash_handler.monitor_thread_exception
     def run_command(self):

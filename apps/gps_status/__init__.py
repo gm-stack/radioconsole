@@ -9,8 +9,6 @@ from AppManager.app import app
 from .gps_satview import gps_satview
 
 class gps_status(app):
-    gui = None
-    data_updated = False
     gps_data = {}
     ui_element_labels = {}
     ui_element_values = {
@@ -20,7 +18,6 @@ class gps_status(app):
 
     def __init__(self, bounds, config, display):
         super().__init__(bounds, config, display)
-        self.gui = pygame_gui.UIManager(cfg.display.size, cfg.theme_file)
 
         self.backend_thread = threading.Thread(target=self.backend_loop, daemon=True)
         self.backend_thread.start()
@@ -55,18 +52,16 @@ class gps_status(app):
             self.data_updated = True
 
     def draw(self, screen):
-        self.gui.draw_ui(screen)
-        self.gps_satview.draw(screen, (400, self.display.TOP_BAR_SIZE))
+        if super().draw(screen):
+            self.gps_satview.draw(screen, (400, self.display.TOP_BAR_SIZE))
+            return True
+        return False
 
     def update(self, dt):
         if self.data_updated:
-            self.data_updated = False
             for update_class, guis in self.ui_element_values.items():
                 for key, gui in guis.items():
                     gui.set_text(str(self.gps_data.get(update_class, {}).get(key, '')))
             if 'SKY' in self.gps_data:
                 self.gps_satview.update_data(self.gps_data['SKY'].get('satellites', []))
-        self.gui.update(dt)
-
-    def process_events(self, e):
-        self.gui.process_events(e)
+        super().update(dt)

@@ -11,10 +11,7 @@ from .backends import backends
 
 class lte_status(app):
     backend = None
-    gui = None
     backend_thread = None
-    data = None
-    data_updated = False
     ui_element_labels = {}
     ui_element_values = {}
     band_labels = {}
@@ -23,7 +20,7 @@ class lte_status(app):
     def __init__(self, bounds, config, display):
         super().__init__(bounds, config, display)
         self.backend = backends[config.backend](config)
-        self.gui = pygame_gui.UIManager(cfg.display.size, cfg.theme_file)
+        self.data = {}
 
         self.backend_thread = threading.Thread(target=self.backend_loop, daemon=True)
         self.backend_thread.start()
@@ -97,9 +94,6 @@ class lte_status(app):
             self.data_updated = True
             time.sleep(1.0)
 
-    def draw(self, screen):
-        self.gui.draw_ui(screen)
-
     def update(self, dt):
         if self.data_updated:
             for key, gui in self.ui_element_values.items():
@@ -114,9 +108,4 @@ class lte_status(app):
                 for key, gui in self.band_values[1].items():
                     gui.set_text('')
 
-            self.data_updated = False
-
-        self.gui.update(dt)
-
-    def process_events(self, e):
-        self.gui.process_events(e)
+        super().update(dt)

@@ -12,6 +12,7 @@ class appSwitcher(object):
     screen = None
     logo = None
     logo_size = None
+    redraw = True
 
     def __init__(self, screen):
         self.gui = pygame_gui.UIManager(cfg.display.size, cfg.theme_file)
@@ -25,18 +26,25 @@ class appSwitcher(object):
         self.top_bar.process_events(e)
         if self.FRONTMOST_APP == 'switcher':
             self.gui.process_events(e)
-            if e.type == pygame.USEREVENT and e.user_type == pygame_gui.UI_BUTTON_PRESSED:
-                if e.ui_element in self.running_apps_buttons.values():
-                    self.switchFrontmostApp(e.ui_element.text)
+            if e.type == pygame.USEREVENT:
+                self.redraw = True
+                if e.user_type == pygame_gui.UI_BUTTON_PRESSED:
+                    if e.ui_element in self.running_apps_buttons.values():
+                        self.switchFrontmostApp(e.ui_element.text)
         else:
             self.running_apps[self.FRONTMOST_APP].process_events(e)
 
     def draw(self, screen):
-        self.top_bar.draw(screen)
+        tbdraw = self.top_bar.draw(screen)
         if self.FRONTMOST_APP == 'switcher':
-            self.gui.draw_ui(screen)
+            if self.redraw:
+                self.gui.draw_ui(screen)
+                self.redraw = False
+                return True
+            return False
         else:
-            self.running_apps[self.FRONTMOST_APP].draw(screen)
+            # TODO: return dirty rects?
+            return self.running_apps[self.FRONTMOST_APP].draw(screen) or tbdraw
 
     def update(self, dt):
         self.top_bar.update(dt)
@@ -74,6 +82,7 @@ class appSwitcher(object):
         self.top_bar.updateAppLabel(appname)
         self.screen.fill((0, 0, 0))
         if appname == 'switcher':
+            self.redraw = True
             self.screen.blit(
                 self.logo,
                 (cfg.display.DISPLAY_W - self.logo_size[0],

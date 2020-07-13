@@ -17,9 +17,6 @@ class LogViewer(app):
     def __init__(self, bounds, config, display):
         super().__init__(bounds, config, display)
 
-        self.gui = pygame_gui.UIManager(cfg.display.size, cfg.theme_file)
-        # todo: maybe use this in app class...
-
         self.command_buttons = {}
 
         def createCommandButton(command_name):
@@ -48,7 +45,6 @@ class LogViewer(app):
             int(math.ceil(len(config.commands) / config.command_buttons_x))
 
         self.logtext = ""
-        self.log_updated = True
 
         self.log_view = pygame_gui.elements.UITextBox(
             html_text='',
@@ -77,7 +73,7 @@ class LogViewer(app):
 
     def clear_console(self):
         self.logtext = ""
-        self.log_updated = True
+        self.data_updated = True
 
     def trim_scrollback(self):
         if len(self.logtext) > self.config.max_scrollback:
@@ -87,22 +83,22 @@ class LogViewer(app):
     def status_message(self, text):
         self.logtext += f"<font color='#0077FF'><b>{self.esc(text)}</b></font><br>"
         self.trim_scrollback()
-        self.log_updated = True
+        self.data_updated = True
 
     def error_message(self, text):
         self.logtext += f"<font color='#FF0000'><b>{self.esc(text)}</b></font><br>"
         self.trim_scrollback()
-        self.log_updated = True
+        self.data_updated = True
 
     def console_message(self, text):
         self.logtext += self.esc(text)
         self.trim_scrollback()
-        self.log_updated = True
+        self.data_updated = True
 
     def console_message_onceonly(self, text):
         self.logtext += f"<font color='#FFFFFF'>{self.esc(text)}</font>"
         self.trim_scrollback()
-        self.log_updated = True
+        self.data_updated = True
 
     @crash_handler.monitor_thread
     def backend_loop(self):
@@ -167,12 +163,8 @@ class LogViewer(app):
                 return
             time.sleep(self.config.retry_seconds)
 
-    def draw(self, screen):
-        self.gui.draw_ui(screen)
-
     def update(self, dt):
-        if self.log_updated:
-            self.log_updated = False
+        if super().update(dt):
             sb = self.log_view.scroll_bar
             scrollAtBottom = (
                 sb is None or sb.scroll_position == \
@@ -193,10 +185,11 @@ class LogViewer(app):
                 self.log_view.scroll_bar.update(0)
                 self.log_view.scroll_bar.bottom_button.held = False
                 self.log_view.update(dt)
-        self.gui.update(dt)
+            self.gui.update(dt)
+
 
     def process_events(self, e):
-        self.gui.process_events(e)
+        super().process_events(e)
         if e.type == pygame.USEREVENT and e.user_type == pygame_gui.UI_BUTTON_PRESSED:
             if e.ui_element in self.command_buttons.values():
                 command = self.config.commands[e.ui_element.text]

@@ -25,8 +25,6 @@ class WaterfallDisplay(app):
 
         self.decimate_zoom = True
 
-        self.gui = pygame_gui.UIManager(cfg.display.size, cfg.theme_file)
-
         BUTTON_Y = cfg.display.DISPLAY_H - self.config.BUTTON_HEIGHT
         self.button_zoom_in = pygame_gui.elements.UIButton(
             relative_rect=pygame.Rect(
@@ -98,9 +96,6 @@ class WaterfallDisplay(app):
         self.rel_bandwidth = list(self.REL_BANDWIDTHS.keys())[self.rel_bandwidth_index]
         self.update_status()
 
-    def update(self, dt):
-        self.gui.update(dt)
-
     def update_status(self):
         if self.rel_bandwidth > 1000000:
             relbw = f"{self.rel_bandwidth/1000000}M"
@@ -109,7 +104,7 @@ class WaterfallDisplay(app):
         self.label_status.set_text(f"BW: {relbw}")
 
     def process_events(self, e):
-        self.gui.process_events(e)
+        super().process_events(e)
         if e.type == pygame.USEREVENT and e.user_type == pygame_gui.UI_BUTTON_PRESSED:
             if e.ui_element == self.button_zoom_in:
                 self.rel_bandwidth_index += 1
@@ -262,6 +257,7 @@ class WaterfallDisplay(app):
             #for m in self.REL_BANDWIDTHS[self.rel_bandwidth]:
             #    self.draw_marker(config.CURRENT_FREQ + m, screen, relative=True)
             #    self.draw_marker(config.CURRENT_FREQ - m, screen, relative=True)
+        return True
 
     def keydown(self, k, m):
         if k == 'up' and not m & pygame.KMOD_SHIFT:

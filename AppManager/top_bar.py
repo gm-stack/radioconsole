@@ -7,6 +7,8 @@ class top_bar(object):
     bounds = None
     switcher = None
     gui = None
+    redraw = True
+
     def __init__(self, sw):
         self.bounds = (0, 0, cfg.display.DISPLAY_W, cfg.display.TOP_BAR_SIZE)
         self.switcher = sw
@@ -22,16 +24,23 @@ class top_bar(object):
 
     def updateAppLabel(self, appname):
         self.appname_label.set_text(appname)
+        #redraw = True
 
     def update(self, dt):
         self.gui.update(dt)
 
     def draw(self, screen):
-        pygame.draw.rect(screen, (64, 64, 64), self.bounds)
-        self.gui.draw_ui(screen)
+        if self.redraw:
+            pygame.draw.rect(screen, (64, 64, 64), self.bounds)
+            self.gui.draw_ui(screen)
+            self.redraw = False
+            return True
+        return False
 
     def process_events(self, e):
         self.gui.process_events(e)
-        if e.type == pygame.USEREVENT and e.user_type == pygame_gui.UI_BUTTON_PRESSED:
-            if e.ui_element == self.appname_label:
-                self.switcher.switchFrontmostApp('switcher')
+        if e.type == pygame.USEREVENT:
+            self.redraw = True
+            if e.user_type == pygame_gui.UI_BUTTON_PRESSED:
+                if e.ui_element == self.appname_label:
+                    self.switcher.switchFrontmostApp('switcher')

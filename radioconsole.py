@@ -49,8 +49,8 @@ try:
                 safe_exit()
             sw.process_events(e)
         sw.update(time_delta)
-        sw.draw(screen)
-        pygame.display.update()
+        if sw.draw(screen):
+            pygame.display.update()
 
 # pylint: disable=broad-except
 except Exception as e:
