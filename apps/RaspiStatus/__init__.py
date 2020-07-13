@@ -37,7 +37,7 @@ class RaspiStatus(app):
                 )
                 y += config.line_height
 
-        create_ui_elements(['model', 'hostname', 'clock_arm', 'throttled', 'volts_core', 'temp'])
+        create_ui_elements(['model', 'hostname', 'clock_arm', 'throttled', 'volts_core', 'temp', 'undervolt', 'freqcap', 'core_throttled', 'templimit'])
 
         self.data = {}
         self.data_updated = False
@@ -51,8 +51,34 @@ class RaspiStatus(app):
     def draw(self, screen):
         self.gui.draw_ui(screen)
 
+    def parse_vc_throttle_status(self, status):
+        if not status:
+            return
+        status = int(status.split('=')[1],16)
+
+        undervolt = bool(status & 0x1)
+        freqcap = bool(status & 0x2)
+        throttled = bool(status & 0x4)
+        templimit = bool(status & 0x8)
+
+        prev_undervolt = bool(status & 0x10000)
+        prev_freqcap = bool(status & 0x20000)
+        prev_throttled = bool(status & 0x40000)
+        prev_templimit = bool(status & 0x80000)
+
+        return {
+            'undervolt': 'ALERT' if undervolt else ('PREV' if prev_undervolt else 'OK'),
+            'freqcap': 'ALERT' if freqcap else ('PREV' if prev_freqcap else 'OK'),
+            'core_throttled': 'ALERT' if throttled else ('PREV' if prev_throttled else 'OK'),
+            'templimit': 'ALERT' if templimit else ('PREV' if prev_templimit else 'OK')
+        }
+
     def update(self, dt):
         if self.data_updated:
+            thr = self.parse_vc_throttle_status(self.data.get('throttled'))
+
+            self.data.update(thr)
+
             for key, gui in self.ui_element_values.items():
                 gui.set_text(self.data.get(key, ''))
 
