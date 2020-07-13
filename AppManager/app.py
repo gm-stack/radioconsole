@@ -24,7 +24,7 @@ class app(object):
         return self._had_update
 
     def process_events(self, e):
-        if e.type == pygame.USEREVENT:
+        if e.type != pygame.MOUSEMOTION:
             self.had_event = True
         self.gui.process_events(e)
 
