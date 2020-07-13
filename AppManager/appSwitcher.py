@@ -88,3 +88,5 @@ class appSwitcher(object):
                 (cfg.display.DISPLAY_W - self.logo_size[0],
                  cfg.display.DISPLAY_H - self.logo_size[1])
             )
+        else:
+            self.running_apps[self.FRONTMOST_APP].had_event = True
