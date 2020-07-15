@@ -19,6 +19,8 @@ class app(object):
 
     def update(self, dt):
         self._had_update = self.data_updated
+        # avoids a race condition if another update arrives between now and draw()
+        # and a subclass's update() method looks at data_updated to see if it should run
         self.data_updated = False
         self.gui.update(dt)
         return self._had_update

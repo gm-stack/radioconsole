@@ -18,6 +18,35 @@ class RaspiStatus(app):
 
         y = display.TOP_BAR_SIZE
 
+        self.ui_element_values['id'] = pygame_gui.elements.ui_label.UILabel(
+            relative_rect=pygame.Rect(0, y, 512, 32),
+            text='', manager=self.gui, object_id="#param_label"
+        )
+        # self.ui_element_values['hostname'] = pygame_gui.elements.ui_label.UILabel(
+        #     relative_rect=pygame.Rect(64, y, 256, 32),
+        #     text='', manager=self.gui, object_id="#param_value"
+        # )
+
+        # self.ui_element_labels['ipaddr'] = pygame_gui.elements.ui_label.UILabel(
+        #     relative_rect=pygame.Rect(, y, 128, 32),
+        #     text='ipaddr', manager=self.gui, object_id="#param_label"
+        # )
+        # self.ui_element_values['ipaddr'] = pygame_gui.elements.ui_label.UILabel(
+        #     relative_rect=pygame.Rect(320, y, 128, 32),
+        #     text='', manager=self.gui, object_id="#param_value"
+        # )
+
+        # self.ui_element_labels['model'] = pygame_gui.elements.ui_label.UILabel(
+        #     relative_rect=pygame.Rect(384, y, 416, 32),
+        #     text='model', manager=self.gui, object_id="#param_label"
+        # )
+        # self.ui_element_values['model'] = pygame_gui.elements.ui_label.UILabel(
+        #     relative_rect=pygame.Rect(448, y, 352, 32),
+        #     text='', manager=self.gui, object_id="#param_value"
+        # )
+
+        y += config.line_height
+
         def create_ui_elements(l):
             nonlocal y
             for ui_element in l:
@@ -28,14 +57,29 @@ class RaspiStatus(app):
                     object_id="#param_label"
                 )
                 self.ui_element_values[ui_element] = pygame_gui.elements.ui_label.UILabel(
-                    relative_rect=pygame.Rect(128, y, 384, 32),
+                    relative_rect=pygame.Rect(128, y, 128, 32),
                     text='',
                     manager=self.gui,
                     object_id="#param_value"
                 )
                 y += config.line_height
 
-        create_ui_elements(['model', 'hostname', 'clock_arm', 'throttled', 'volts_core', 'temp', 'undervolt', 'freqcap', 'core_throttled', 'templimit'])
+        create_ui_elements(['frequency', 'volts_core', 'temp'])
+
+        for i, ui_element in enumerate(['undervolt', 'freqcap', 'core_throttled', 'templimit']):
+            self.ui_element_labels[ui_element] = pygame_gui.elements.ui_label.UILabel(
+                relative_rect=pygame.Rect(i*128, y, 128, 32),
+                text=ui_element,
+                manager=self.gui,
+                object_id="#param_label"
+            )
+            self.ui_element_values[ui_element] = pygame_gui.elements.ui_label.UILabel(
+                relative_rect=pygame.Rect(i*128, y+config.line_height, 128, 32),
+                text='',
+                manager=self.gui,
+                object_id="#param_value"
+            )
+        y += config.line_height * 2.5
 
         self.data = {}
 
@@ -67,11 +111,19 @@ class RaspiStatus(app):
             'templimit': 'ALERT' if templimit else ('PREV' if prev_templimit else 'OK')
         }
 
+    def frequency(self, freq):
+        if not freq:
+            return ''
+        freq = int(freq.split("=")[1])
+        return f"{freq/1000000.0:.0f}MHz"
+
     def update(self, dt):
         if self.data_updated:
-            thr = self.parse_vc_throttle_status(self.data.get('throttled'))
-
-            self.data.update(thr)
+            self.data.update(self.parse_vc_throttle_status(self.data.get('throttled')))
+            self.data['id'] = f"{self.data.get('hostname', '')}: {self.data.get('model', '')}"
+            self.data['frequency'] = self.frequency(self.data.get('clock_arm'))
+            self.data['volts_core'] = self.data.get('volts_core','').split('=')[-1]
+            self.data['temp'] = self.data.get('temp', '').split('=')[-1].replace("'",'\N{DEGREE SIGN}')
 
             for key, gui in self.ui_element_values.items():
                 gui.set_text(self.data.get(key, ''))
