@@ -34,9 +34,11 @@ class timegraph(object):
 
     def redraw(self):
         self.surface.fill((0x21, 0x28, 0x2d))
-        if (not self.max_value and not self.min_value) \
-            or (self.max_value == self.min_value):
-            scale = 1
+        if not self.max_value and not self.min_value:
+            return
+
+        if self.max_value == self.min_value:
+            scale = self.min_value
             offset = 0
         else:
             scale = (self.max_value - self.min_value)
@@ -44,7 +46,9 @@ class timegraph(object):
 
         for x, d in enumerate(self.data):
             h = ((d - offset) / scale) * (self.bounds.height - 2)
-            pygame.draw.line(self.surface, (0, 255, 0), (x, self.bounds.height - 1), (x, self.bounds.height - (int(h) - 2)))
+            startpos = (x, self.bounds.height - 1)
+            endpos = (x, self.bounds.height - (int(h) - 2))
+            pygame.draw.line(self.surface, (0, 255, 0), startpos, endpos)
 
 
     def draw(self, screen):
