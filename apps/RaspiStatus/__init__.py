@@ -137,12 +137,12 @@ class RaspiStatus(app):
                 data['id'] = f"{data.get('hostname', '')}: {data.get('model', '')}" \
                     if not data.get('status') else data['status']
 
+                volts = data.get('volts_core', '').split('=')[-1].rstrip('V')
                 freq = self.frequency(data.get('clock_arm'))
-                if freq:
-                    data['frequency'] = f"{freq/1000000.0:.0f}MHz"
-                    self.ui_element_graphs[host]['frequency'].datapoint(freq)
+                if freq and volts:
 
-                #self.data['volts_core'] = self.data.get('volts_core', '').split('=')[-1]
+                    data['frequency'] = f"{freq/1000000.0:.0f}MHz/{float(volts):.2f}V"
+                    self.ui_element_graphs[host]['frequency'].datapoint(freq)
 
                 temp = data.get('temp', '').split('=')[-1].rstrip("'C")
                 if temp:
@@ -206,7 +206,7 @@ class RaspiStatus(app):
                 while True:
                     self.data[host['host']]['clock_arm'] = run_command('vcgencmd measure_clock arm')
                     self.data[host['host']]['throttled'] = run_command('vcgencmd get_throttled')
-                    #self.data[host['host']]['volts_core'] = run_command('vcgencmd measure_volts core')
+                    self.data[host['host']]['volts_core'] = run_command('vcgencmd measure_volts core')
                     self.data[host['host']]['temp'] = run_command('vcgencmd measure_temp')
                     self.data[host['host']]['meminfo'] = run_command('cat /proc/meminfo')
 
