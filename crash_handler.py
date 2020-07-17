@@ -16,11 +16,11 @@ def register(scr, ex):
 
 # pylint: disable=broad-except
 def monitor_thread(func):
-    def wrapper(self):
+    def wrapper(self, *args, **kwargs):
         funcdesc = f"Thread exited: \n  File \"{inspect.getfile(func)}\"," \
             f" line {func.__code__.co_firstlineno}, in {func.__name__}"
         try:
-            func(self)
+            func(self, *args, **kwargs)
             crash(None, is_thread=True, threadmsg=funcdesc)
         except Exception as e:
             crash(e, is_thread=True)

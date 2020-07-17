@@ -20,58 +20,72 @@ class RaspiStatus(app):
 
         y = display.TOP_BAR_SIZE
 
-        self.ui_element_values['id'] = pygame_gui.elements.ui_label.UILabel(
-            relative_rect=pygame.Rect(0, y, 800, 32),
-            text='', manager=self.gui, object_id="#param_label"
-        )
-
-        y += config.line_height
-
-        def create_ui_elements(l):
+        def create_ui(host):
             nonlocal y
-            for ui_element in l:
-                self.ui_element_labels[ui_element] = pygame_gui.elements.ui_label.UILabel(
-                    relative_rect=pygame.Rect(0, y, 128, 32),
+
+            self.ui_element_labels[host] = {}
+            self.ui_element_values[host] = {}
+            self.ui_element_graphs[host] = {}
+
+            self.ui_element_values[host]['id'] = pygame_gui.elements.ui_label.UILabel(
+                relative_rect=pygame.Rect(0, y, 800, 32),
+                text='', manager=self.gui, object_id="#param_label"
+            )
+
+            y += config.line_height
+
+            def create_ui_elements(l):
+                nonlocal y
+                for ui_element in l:
+                    self.ui_element_labels[host][ui_element] = pygame_gui.elements.ui_label.UILabel(
+                        relative_rect=pygame.Rect(0, y, 128, 32),
+                        text=ui_element,
+                        manager=self.gui,
+                        object_id="#param_label"
+                    )
+                    self.ui_element_values[host][ui_element] = pygame_gui.elements.ui_label.UILabel(
+                        relative_rect=pygame.Rect(128, y, 128, 32),
+                        text='',
+                        manager=self.gui,
+                        object_id="#param_value"
+                    )
+                    self.ui_element_graphs[host][ui_element] = timegraph(
+                        pygame.Rect(256, y, 544, 32)
+                    )
+
+                    y += config.line_height
+
+            create_ui_elements(['frequency', 'cpu_temp', 'free_mem'])
+
+            for i, ui_element in enumerate(['undervolt', 'freqcap', 'core_throttled', 'templimit']):
+                self.ui_element_labels[host][ui_element] = pygame_gui.elements.ui_label.UILabel(
+                    relative_rect=pygame.Rect(i*128, y, 128, 32),
                     text=ui_element,
                     manager=self.gui,
                     object_id="#param_label"
                 )
-                self.ui_element_values[ui_element] = pygame_gui.elements.ui_label.UILabel(
-                    relative_rect=pygame.Rect(128, y, 128, 32),
+                self.ui_element_values[host][ui_element] = pygame_gui.elements.ui_label.UILabel(
+                    relative_rect=pygame.Rect(i*128, y+config.line_height, 128, 32),
                     text='',
                     manager=self.gui,
                     object_id="#param_value"
                 )
-                self.ui_element_graphs[ui_element] = timegraph(
-                    pygame.Rect(256, y, 544, 32)
-                )
-
-                y += config.line_height
-
-        create_ui_elements(['frequency', 'temp', 'free_mem'])
-
-        for i, ui_element in enumerate(['undervolt', 'freqcap', 'core_throttled', 'templimit']):
-            self.ui_element_labels[ui_element] = pygame_gui.elements.ui_label.UILabel(
-                relative_rect=pygame.Rect(i*128, y, 128, 32),
-                text=ui_element,
-                manager=self.gui,
-                object_id="#param_label"
-            )
-            self.ui_element_values[ui_element] = pygame_gui.elements.ui_label.UILabel(
-                relative_rect=pygame.Rect(i*128, y+config.line_height, 128, 32),
-                text='',
-                manager=self.gui,
-                object_id="#param_value"
-            )
-        y += config.line_height * 2.5
+            y += config.line_height * 2.5
 
         self.data = {}
 
-        self.backend_thread = threading.Thread(
-            target=self.run_command,
-            daemon=True
-        )
-        self.backend_thread.start()
+        for host in self.config.hosts:
+            create_ui(host['host'])
+            self.data[host['host']] = {}
+            self.backend_thread = threading.Thread(
+                target=self.run_command,
+                args=[host],
+                daemon=True
+            )
+            self.backend_thread.start()
+
+
+
 
     def parse_vc_throttle_status(self, status):
         if not status:
@@ -116,52 +130,56 @@ class RaspiStatus(app):
 
     def update(self, dt):
         if self.data_updated:
-            self.data.update(self.parse_vc_throttle_status(self.data.get('throttled')))
-            self.data['id'] = f"{self.data.get('hostname', '')}: {self.data.get('model', '')}" \
-                if not self.data.get('status') else self.data['status']
+            for hostconfig in self.config.hosts:
+                host = hostconfig['host']
+                data = self.data[host]
+                data.update(self.parse_vc_throttle_status(data.get('throttled')))
+                data['id'] = f"{data.get('hostname', '')}: {data.get('model', '')}" \
+                    if not data.get('status') else data['status']
 
-            freq = self.frequency(self.data.get('clock_arm'))
-            if freq:
-                self.data['frequency'] = f"{freq/1000000.0:.0f}MHz"
-                self.ui_element_graphs['frequency'].datapoint(freq)
+                freq = self.frequency(data.get('clock_arm'))
+                if freq:
+                    data['frequency'] = f"{freq/1000000.0:.0f}MHz"
+                    self.ui_element_graphs[host]['frequency'].datapoint(freq)
 
-            #self.data['volts_core'] = self.data.get('volts_core', '').split('=')[-1]
+                #self.data['volts_core'] = self.data.get('volts_core', '').split('=')[-1]
 
-            temp = self.data.get('temp', '').split('=')[-1].rstrip("'C")
-            if temp:
-                self.data['temp'] = f"{temp}\N{DEGREE SIGN}C"
-                self.ui_element_graphs['temp'].datapoint(float(temp))
+                temp = data.get('temp', '').split('=')[-1].rstrip("'C")
+                if temp:
+                    data['cpu_temp'] = f"{temp}\N{DEGREE SIGN}C"
+                    self.ui_element_graphs[host]['cpu_temp'].datapoint(float(temp))
 
-            self.data.update(self.parse_meminfo(self.data.get('meminfo')))
+                data.update(self.parse_meminfo(data.get('meminfo')))
 
-            mem_available = self.data.get('MemAvailable')
-            if mem_available:
-                self.data['free_mem'] = self.mb(mem_available)
-                self.ui_element_graphs['free_mem'].datapoint(float(mem_available)/1024)
+                mem_available = data.get('MemAvailable')
+                if mem_available:
+                    data['free_mem'] = self.mb(mem_available)
+                    self.ui_element_graphs[host]['free_mem'].datapoint(float(mem_available)/1024)
 
-            for key, gui in self.ui_element_values.items():
-                gui.set_text(self.data.get(key, ''))
+                for key, gui in self.ui_element_values[host].items():
+                    gui.set_text(data.get(key, ''))
 
         super().update(dt)
 
     def draw(self, screen):
         if super().draw(screen):
-            for graph in self.ui_element_graphs.values():
-                graph.draw(screen)
+            for host_graphs in self.ui_element_graphs.values():
+                for graph in host_graphs.values():
+                    graph.draw(screen)
             return True
         return False
 
     @crash_handler.monitor_thread_exception
-    def run_command(self):
+    def run_command(self, host):
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
         while True:
             try:
                 ssh.connect(
-                    self.config.host,
-                    username=self.config.username,
-                    port=self.config.port,
+                    host['host'],
+                    username=host['username'],
+                    port=host['port'],
                     timeout=5,
                     banner_timeout=10
                 )
@@ -182,26 +200,26 @@ class RaspiStatus(app):
                             res += out
                     return res.decode('UTF-8').rstrip(' \t\r\n\x00')
 
-                self.data['model'] = run_command('cat /proc/device-tree/model')
-                self.data['hostname'] = run_command('hostname')
+                self.data[host['host']]['model'] = run_command('cat /proc/device-tree/model')
+                self.data[host['host']]['hostname'] = run_command('hostname')
 
                 while True:
-                    self.data['clock_arm'] = run_command('vcgencmd measure_clock arm')
-                    self.data['throttled'] = run_command('vcgencmd get_throttled')
-                    #self.data['volts_core'] = run_command('vcgencmd measure_volts core')
-                    self.data['temp'] = run_command('vcgencmd measure_temp')
-                    self.data['meminfo'] = run_command('cat /proc/meminfo')
+                    self.data[host['host']]['clock_arm'] = run_command('vcgencmd measure_clock arm')
+                    self.data[host['host']]['throttled'] = run_command('vcgencmd get_throttled')
+                    #self.data[host['host']]['volts_core'] = run_command('vcgencmd measure_volts core')
+                    self.data[host['host']]['temp'] = run_command('vcgencmd measure_temp')
+                    self.data[host['host']]['meminfo'] = run_command('cat /proc/meminfo')
 
-                    self.data['status'] = ''
+                    self.data[host['host']]['status'] = ''
 
                     self.data_updated = True
                     time.sleep(self.config.refresh_seconds)
 
             except OSError as e:
-                self.data['status'] = f"Connection error: {str(e)}"
+                self.data[host['host']]['status'] = f"Connection error: {str(e)}"
                 self.data_updated = True
             except paramiko.SSHException as e:
-                self.data['status'] = f"SSH error: {str(e)}"
+                self.data[host['host']]['status'] = f"SSH error: {str(e)}"
                 self.data_updated = True
 
             time.sleep(self.config.refresh_seconds)

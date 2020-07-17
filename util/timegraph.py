@@ -15,18 +15,15 @@ class timegraph(object):
         self.data.append(d)
         if len(self.data) > self.bounds.width:
             del self.data[0]
-            print("removing first")
 
         extents_updated = False
 
         if self.min_value is None or d < self.min_value:
             self.min_value = d
-            print(f"min_value = {d}")
             extents_updated = True
 
         if self.max_value is None or d > self.max_value:
             self.max_value = d
-            print(f"max_value = {d}")
             extents_updated = True
 
         #if extents_updated:
