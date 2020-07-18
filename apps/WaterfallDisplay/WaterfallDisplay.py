@@ -85,6 +85,8 @@ class WaterfallDisplay(app):
         self.graph_surf = surface.Surface((self.W, self.config.GRAPH_HEIGHT))
         self.rf = fftd
 
+        self.RF_MAX = config.RF_MAX
+
         self.num_fft_bins = None
         self.display_bandwidth = None
 
@@ -222,7 +224,7 @@ class WaterfallDisplay(app):
 
             fft = self.rf.fft(self.num_fft_bins)[::-1][leftside_bin:]
 
-            fft = (fft - self.config.RF_MIN) / (self.config.RF_MAX - self.config.RF_MIN)
+            fft = (fft - self.config.RF_MIN) / (self.RF_MAX - self.config.RF_MIN)
         else:
             self.display_bandwidth = self.rel_bandwidth
             if self.decimate_zoom:
@@ -240,7 +242,11 @@ class WaterfallDisplay(app):
                     int((centre_freq - (self.rel_bandwidth / 2) - centre_freq) / hz_per_pixel)
 
                 fft = self.rf.fft(self.num_fft_bins)[::-1][leftside_bin:]
-            fft = (fft - self.config.RF_MIN) / (self.config.RF_MAX - self.config.RF_MIN)
+            fft = (fft - self.config.RF_MIN) / (self.RF_MAX - self.config.RF_MIN)
+
+        headroom = (0.4 - max(fft))
+        change = headroom * self.RF_MAX * 0.03
+        self.RF_MAX -= change
 
         self.draw_wf(fft, screen)
         self.draw_graph(fft, screen)
@@ -261,12 +267,12 @@ class WaterfallDisplay(app):
 
     def keydown(self, k, m):
         if k == 'up' and not m & pygame.KMOD_SHIFT:
-            self.config.RF_MAX += 10
-            print(f"rf_max: {self.config.RF_MAX}")
+            self.RF_MAX += 10
+            print(f"rf_max: {self.RF_MAX}")
             return True
         if k == 'down' and not m & pygame.KMOD_SHIFT:
-            self.config.RF_MAX -= 10
-            print(f"rf_max: {self.config.RF_MAX}")
+            self.RF_MAX -= 10
+            print(f"rf_max: {self.RF_MAX}")
             return True
         if k == 'up' and (m & pygame.KMOD_SHIFT):
             self.config.RF_MIN += 10

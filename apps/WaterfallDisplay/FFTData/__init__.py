@@ -4,12 +4,14 @@ import scipy.signal
 
 from . import rtl
 from . import random_s
+from . import samplefile
 
 class FFTData(object):
 
     SampleProviders = {
         'rtlsdr': rtl.rtlsdr_samples,
-        'random': random_s.rand_samples
+        'random': random_s.rand_samples,
+        'file': samplefile.file_samples
     }
 
     def __init__(self, provider, config):
