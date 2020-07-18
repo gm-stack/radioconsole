@@ -230,7 +230,7 @@ class WaterfallDisplay(app):
             if self.decimate_zoom:
                 decimate_factor = int(self.config.SAMPLE_RATE / self.rel_bandwidth)
 
-                fft = self.rf.fft(self.bounds.w, decimate=decimate_factor)
+                fft = self.rf.fft(self.bounds.w, decimate=decimate_factor)[::-1]
             else:
                 self.num_fft_bins = int((total_fft_bw / self.display_bandwidth) * self.bounds.w)
 
@@ -245,7 +245,7 @@ class WaterfallDisplay(app):
             fft = (fft - self.config.RF_MIN) / (self.RF_MAX - self.config.RF_MIN)
 
         headroom = (0.4 - max(fft))
-        change = headroom * self.RF_MAX * 0.03
+        change = headroom * self.RF_MAX * 0.1
         self.RF_MAX -= change
 
         self.draw_wf(fft, screen)
