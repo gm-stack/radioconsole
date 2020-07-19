@@ -30,8 +30,7 @@ class WaterfallDisplay(app):
     def __init__(self, bounds, config, display):
         super().__init__(bounds, config, display)
 
-        self.backend_thread = threading.Thread(target=self.backend_loop, daemon=True)
-        self.backend_thread.start()
+        self.colourmap = [(int(c[0]*255), int(c[1]*255), int(c[2]*255)) for c in turbo_colormap.TURBO_COLORMAP_DATA]
 
         self.fft_queue = queue.Queue()
 
@@ -117,6 +116,9 @@ class WaterfallDisplay(app):
         self.rel_bandwidth = list(self.REL_BANDWIDTHS.keys())[self.rel_bandwidth_index]
         self.update_status()
 
+        self.backend_thread = threading.Thread(target=self.backend_loop, daemon=True)
+        self.backend_thread.start()
+
     def update_status(self):
         if self.rel_bandwidth > 1000000:
             relbw = f"{self.rel_bandwidth/1000000}M"
@@ -159,17 +161,17 @@ class WaterfallDisplay(app):
                 )
                 self.params_updated = True
 
-    def draw_wf(self, fft, screen):
-        self.waterfall_surf.scroll(0, 1)
+    def draw_wf(self, ffts, screen):
         self.waterfall_surf.lock()
-        for i in range(self.W):
-            pixel_colour = turbo_colormap.interpolate_or_clip(fft[i] / 255.0)
-            pixel_colour = [int(c*255) for c in pixel_colour]
-            self.waterfall_surf.set_at((i, 0), pixel_colour)
+        nfft = len(ffts)
+        self.waterfall_surf.scroll(0, nfft)
+        for i, fft in enumerate(ffts):
+            for x in range(self.W):
+                self.waterfall_surf.set_at((x, nfft - i), self.colourmap[fft[x]])
         self.waterfall_surf.unlock()
 
         screen.blit(self.waterfall_surf, (self.X, self.WF_Y), area=(0, 0, self.W, self.WF_H))
-
+    
     def freq_to_x(self, freq):
         if self.absmode:
             centre_freq = (self.abs_freq_low + self.abs_freq_high) // 2
@@ -209,7 +211,7 @@ class WaterfallDisplay(app):
 
     def draw_graph(self, fft, screen):
         #self.fade()
-        #self.graph_surf.unlock()
+        self.graph_surf.lock()
 
         self.graph_surf.fill((0, 0, 0))
 
@@ -226,6 +228,8 @@ class WaterfallDisplay(app):
             except OverflowError:
                 continue
             pygame.draw.line(self.graph_surf, (0, 255, 0), (i, this_y), (j, next_y))
+
+        self.graph_surf.unlock()
 
         screen.blit(
             self.graph_surf,
@@ -291,10 +295,14 @@ class WaterfallDisplay(app):
         else:
              self.display_bandwidth = self.rel_bandwidth
 
-        while self.fft_queue.qsize():
-            fft = self.fft_queue.get(block=False)
-            self.draw_wf(fft, screen)
-            self.draw_graph(fft, screen)
+        ffts = []
+        items = self.fft_queue.qsize()
+        while items:
+            ffts.append(self.fft_queue.get(block=False))
+            items -= 1
+        if ffts:
+            self.draw_wf(ffts, screen)
+            self.draw_graph(ffts[-1], screen) # only need to draw graph once
 
         self.gui.draw_ui(screen)
 
