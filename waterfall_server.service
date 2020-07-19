@@ -1,0 +1,21 @@
+# cp waterfall_server.service /etc/systemd/system/
+# systemctl enable waterfall_server
+# systemctl start  waterfall_server
+
+[Unit]
+Description=Radioconsole Waterfall Server
+
+[Service]
+Type=simple
+WorkingDirectory=/home/pi/radioconsole/apps/WaterfallDisplay/
+ExecStart=/usr/bin/python3 /home/pi/radioconsole/apps/WaterfallDisplay/WaterfallServer.py
+Restart=always
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=radioconsole-wf
+User=root
+Group=root
+SendSIGHUP=no
+
+[Install]
+WantedBy=multi-user.target

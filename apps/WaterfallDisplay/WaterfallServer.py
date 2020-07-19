@@ -8,6 +8,7 @@ from types import SimpleNamespace
 import FFTData
 import time
 import struct
+import rtlsdr
 
 port = 45362
 
@@ -132,7 +133,16 @@ def handle_conn(conn, addr):
                 return
             prev_sampletime = time.monotonic()
 
-fft = FFTWaterfall()
+print("starting rtlsdr")
+
+while True:
+    try:
+        fft = FFTWaterfall()
+        break
+    except rtlsdr.rtlsdr.LibUSBError:
+        time.sleep(5)
+
+print("rtlsdr started")
 
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
