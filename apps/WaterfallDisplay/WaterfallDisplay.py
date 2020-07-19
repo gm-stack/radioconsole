@@ -1,13 +1,20 @@
+import socket
+import threading
+import queue
+import struct
+import time
+
 import pygame
 from pygame import surface
 import pygame_gui
+
+import crash_handler
 
 from AppManager.app import app
 
 from config_reader import cfg
 
 from . import turbo_colormap
-from . import FFTData
 
 class WaterfallDisplay(app):
     REL_BANDWIDTHS = {
@@ -22,6 +29,16 @@ class WaterfallDisplay(app):
 
     def __init__(self, bounds, config, display):
         super().__init__(bounds, config, display)
+
+        self.backend_thread = threading.Thread(target=self.backend_loop, daemon=True)
+        self.backend_thread.start()
+
+        self.fft_queue = queue.Queue()
+
+        self.net_status = ""
+        self.net_status_updated = True
+
+        self.params_updated = True
 
         self.decimate_zoom = True
 
@@ -63,18 +80,23 @@ class WaterfallDisplay(app):
         if self.decimate_zoom:
             # preserve text when disabled as FFT Zoom
             self.button_zoommode.set_text("Decimate Zoom")
+
         self.label_status = pygame_gui.elements.UILabel(
             relative_rect=pygame.Rect(
                 256 + 1, BUTTON_Y + 1,
-                cfg.display.DISPLAY_W - 512 - 2, self.config.BUTTON_HEIGHT - 2
+                cfg.display.DISPLAY_W - 512 - 2, self.config.BUTTON_HEIGHT/2 - 2
             ),
             text='',
             manager=self.gui
         )
 
-        fftd = FFTData.FFTData(
-            provider=config.SAMPLE_PROVIDER,
-            config=config
+        self.label_net_status = pygame_gui.elements.UILabel(
+            relative_rect=pygame.Rect(
+                256 + 1, BUTTON_Y + 1 + self.config.BUTTON_HEIGHT/2,
+                cfg.display.DISPLAY_W - 512 - 2, self.config.BUTTON_HEIGHT/2 - 2
+            ),
+            text='',
+            manager=self.gui
         )
 
         self.X, self.Y, self.W, self.H = bounds
@@ -83,9 +105,6 @@ class WaterfallDisplay(app):
 
         self.waterfall_surf = surface.Surface((self.W, self.WF_H))
         self.graph_surf = surface.Surface((self.W, self.config.GRAPH_HEIGHT))
-        self.rf = fftd
-
-        self.RF_MAX = config.RF_MAX
 
         self.num_fft_bins = None
         self.display_bandwidth = None
@@ -112,11 +131,13 @@ class WaterfallDisplay(app):
                 self.rel_bandwidth_index += 1
                 rel_bw_list = list(self.REL_BANDWIDTHS.keys())
                 self.rel_bandwidth = rel_bw_list[self.rel_bandwidth_index % len(self.REL_BANDWIDTHS)]
+                self.params_updated = True
                 self.update_status()
             elif e.ui_element == self.button_zoom_out:
                 self.rel_bandwidth_index -= 1
                 rel_bw_list = list(self.REL_BANDWIDTHS.keys())
                 self.rel_bandwidth = rel_bw_list[self.rel_bandwidth_index % len(self.REL_BANDWIDTHS)]
+                self.params_updated = True
                 self.update_status()
             elif e.ui_element == self.button_absmode:
                 self.absmode = not self.absmode
@@ -130,17 +151,19 @@ class WaterfallDisplay(app):
                     self.button_zoom_in.enable()
                     self.button_zoom_out.enable()
                     self.button_zoommode.enable()
+                self.params_updated = True
             elif e.ui_element == self.button_zoommode:
                 self.decimate_zoom = not self.decimate_zoom
                 self.button_zoommode.set_text(
                     "Decimate Zoom" if self.decimate_zoom else "FFT Zoom"
                 )
+                self.params_updated = True
 
     def draw_wf(self, fft, screen):
         self.waterfall_surf.scroll(0, 1)
         self.waterfall_surf.lock()
         for i in range(self.W):
-            pixel_colour = turbo_colormap.interpolate_or_clip(fft[i])
+            pixel_colour = turbo_colormap.interpolate_or_clip(fft[i] / 255.0)
             pixel_colour = [int(c*255) for c in pixel_colour]
             self.waterfall_surf.set_at((i, 0), pixel_colour)
         self.waterfall_surf.unlock()
@@ -198,8 +221,8 @@ class WaterfallDisplay(app):
 
         for i, j in zip(range(self.W), range(1, self.W)):
             try:
-                this_y = self.config.GRAPH_HEIGHT - int(fft[i] * float(self.config.GRAPH_HEIGHT))
-                next_y = self.config.GRAPH_HEIGHT - int(fft[j] * float(self.config.GRAPH_HEIGHT))
+                this_y = self.config.GRAPH_HEIGHT - int(fft[i] * float(self.config.GRAPH_HEIGHT) / 255.0)
+                next_y = self.config.GRAPH_HEIGHT - int(fft[j] * float(self.config.GRAPH_HEIGHT) / 255.0)
             except OverflowError:
                 continue
             pygame.draw.line(self.graph_surf, (0, 255, 0), (i, this_y), (j, next_y))
@@ -210,46 +233,69 @@ class WaterfallDisplay(app):
             area=(0, 0, self.W, self.config.GRAPH_HEIGHT)
         )
 
+    def set_net_status(self, status):
+        self.net_status = status
+        self.net_status_updated = True
+
+    @crash_handler.monitor_thread
+    def backend_loop(self):
+        while True:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                try:
+                    s.connect((self.config.HOST, self.config.PORT))
+                    self.set_net_status('Connected')
+                    self.params_updated = True
+                    while True:
+                        if self.params_updated:
+                            self.params_updated = False
+                            print("updated params")
+                            d = struct.pack(
+                                '!BBHIIIBBxxxxxx', # 24 bytes
+                                0x00, # version
+                                0x00, # message (parameters)
+                                self.bounds.w,
+                                self.config.IF_FREQ,
+                                self.config.SAMPLE_RATE,
+                                self.rel_bandwidth,
+                                self.absmode,
+                                self.decimate_zoom
+                            )
+                            s.sendall(d)
+
+                        # todo: parse header
+                        frame_size = self.bounds.w + 2
+                        data = bytes()
+                        while len(data) < frame_size:
+                            rcvd = s.recv(frame_size-len(data))
+                            if not rcvd:
+                                self.set_net_status('Reconnecting...')
+                                raise OSError("Disconnected")
+                            data += rcvd
+                        self.fft_queue.put_nowait(data[2:])
+
+
+                except OSError as e:
+                    self.set_net_status(str(e))
+            time.sleep(1)
+
+
+    def update(self, dt):
+        if self.net_status_updated:
+            self.net_status_updated = False
+            self.label_net_status.set_text(self.net_status)
+        super().update(dt)
+
     def draw(self, screen):
-        total_fft_bw = (self.config.SAMPLE_RATE)
         if self.absmode: # absolute frequency display
-            self.display_bandwidth = self.abs_freq_high - self.abs_freq_low
-            self.num_fft_bins = int((total_fft_bw / self.display_bandwidth) * self.bounds.w)
-
-            centre_freq = self.config.CURRENT_FREQ
-            centre_bin = self.num_fft_bins // 2
-            hz_per_pixel = total_fft_bw / float(self.num_fft_bins)
-
-            leftside_bin = centre_bin + int((self.abs_freq_low - centre_freq) / hz_per_pixel)
-
-            fft = self.rf.fft(self.num_fft_bins)[::-1][leftside_bin:]
-
-            fft = (fft - self.config.RF_MIN) / (self.RF_MAX - self.config.RF_MIN)
+             self.display_bandwidth = self.abs_freq_high - self.abs_freq_low
         else:
-            self.display_bandwidth = self.rel_bandwidth
-            if self.decimate_zoom:
-                decimate_factor = int(self.config.SAMPLE_RATE / self.rel_bandwidth)
+             self.display_bandwidth = self.rel_bandwidth
 
-                fft = self.rf.fft(self.bounds.w, decimate=decimate_factor)[::-1]
-            else:
-                self.num_fft_bins = int((total_fft_bw / self.display_bandwidth) * self.bounds.w)
+        while self.fft_queue.qsize():
+            fft = self.fft_queue.get(block=False)
+            self.draw_wf(fft, screen)
+            self.draw_graph(fft, screen)
 
-                centre_freq = self.config.CURRENT_FREQ
-                centre_bin = self.num_fft_bins // 2
-                hz_per_pixel = total_fft_bw / float(self.num_fft_bins)
-
-                leftside_bin = centre_bin + \
-                    int((centre_freq - (self.rel_bandwidth / 2) - centre_freq) / hz_per_pixel)
-
-                fft = self.rf.fft(self.num_fft_bins)[::-1][leftside_bin:]
-            fft = (fft - self.config.RF_MIN) / (self.RF_MAX - self.config.RF_MIN)
-
-        headroom = (0.4 - max(fft))
-        change = headroom * self.RF_MAX * 0.1
-        self.RF_MAX -= change
-
-        self.draw_wf(fft, screen)
-        self.draw_graph(fft, screen)
         self.gui.draw_ui(screen)
 
         if self.absmode:
@@ -264,22 +310,3 @@ class WaterfallDisplay(app):
             #    self.draw_marker(config.CURRENT_FREQ + m, screen, relative=True)
             #    self.draw_marker(config.CURRENT_FREQ - m, screen, relative=True)
         return True
-
-    def keydown(self, k, m):
-        if k == 'up' and not m & pygame.KMOD_SHIFT:
-            self.RF_MAX += 10
-            print(f"rf_max: {self.RF_MAX}")
-            return True
-        if k == 'down' and not m & pygame.KMOD_SHIFT:
-            self.RF_MAX -= 10
-            print(f"rf_max: {self.RF_MAX}")
-            return True
-        if k == 'up' and (m & pygame.KMOD_SHIFT):
-            self.config.RF_MIN += 10
-            print(f"rf_min: {self.config.RF_MIN}")
-            return True
-        if k == 'down' and (m & pygame.KMOD_SHIFT):
-            self.config.RF_MIN -= 10
-            print(f"rf_min: {self.config.RF_MIN}")
-            return True
-        return False
