@@ -30,6 +30,9 @@ class FFTData(object):
 
         self.last_window_size = None
         self.window = None
+    
+    def retune(self, *args, **kwargs):
+        self.provider.retune(*args, **kwargs)
 
     def fft(self, num_bins, decimate=1):
         if self.last_fft_bins != num_bins:
