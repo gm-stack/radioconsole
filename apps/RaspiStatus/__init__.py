@@ -86,7 +86,6 @@ class RaspiStatus(app):
 
 
 
-
     def parse_vc_throttle_status(self, status):
         if not status:
             return {}
@@ -108,6 +107,13 @@ class RaspiStatus(app):
             'core_throttled': 'ALERT' if throttled else ('PREV' if prev_throttled else 'OK'),
             'templimit': 'ALERT' if templimit else ('PREV' if prev_templimit else 'OK')
         }
+
+    def colour_for_throttle_status(self, status):
+        return {
+            'ALERT': (255, 0, 0, 255),
+            'PREV': (255, 255, 0, 255),
+            'OK': (0, 255, 0, 255)
+        }.get(status, (127, 127, 127, 255))
 
     def frequency(self, freq):
         if not freq:
@@ -158,6 +164,13 @@ class RaspiStatus(app):
 
                 for key, gui in self.ui_element_values[host].items():
                     gui.set_text(data.get(key, ''))
+
+                for ui_element in ['undervolt', 'freqcap', 'core_throttled', 'templimit']:
+                    el = self.ui_element_values[host][ui_element]
+                    c = self.colour_for_throttle_status(data.get(ui_element))
+                    if el.text_colour != c:
+                        el.text_colour = c
+                        el.rebuild()
 
         super().update(dt)
 
