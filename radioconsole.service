@@ -8,7 +8,7 @@ Description=Radioconsole GUI
 [Service]
 Type=simple
 WorkingDirectory=/home/pi/radioconsole/
-ExecStart=/usr/bin/python3 /home/pi/radioconsole/radioconsole.py
+ExecStart=/usr/bin/python3 -u /home/pi/radioconsole/radioconsole.py
 Restart=always
 StandardOutput=syslog
 StandardError=syslog

@@ -8,7 +8,7 @@ Description=Radioconsole Waterfall Server
 [Service]
 Type=simple
 WorkingDirectory=/home/pi/radioconsole/apps/WaterfallDisplay/
-ExecStart=/usr/bin/python3 /home/pi/radioconsole/apps/WaterfallDisplay/WaterfallServer.py
+ExecStart=/usr/bin/python3 -u /home/pi/radioconsole/apps/WaterfallDisplay/WaterfallServer.py
 Restart=always
 StandardOutput=syslog
 StandardError=syslog
