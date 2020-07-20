@@ -59,17 +59,31 @@ class RaspiStatus(app):
 
             for i, ui_element in enumerate(['undervolt', 'freqcap', 'core_throttled', 'templimit']):
                 self.ui_element_labels[host][ui_element] = pygame_gui.elements.ui_label.UILabel(
-                    relative_rect=pygame.Rect(i*128, y, 128, 32),
+                    relative_rect=pygame.Rect(i*110, y, 110, 32),
                     text=ui_element,
                     manager=self.gui,
                     object_id="#param_label"
                 )
                 self.ui_element_values[host][ui_element] = pygame_gui.elements.ui_label.UILabel(
-                    relative_rect=pygame.Rect(i*128, y+config.line_height, 128, 32),
+                    relative_rect=pygame.Rect(i*110, y+config.line_height, 110, 32),
                     text='',
                     manager=self.gui,
                     object_id="#param_value"
                 )
+
+            self.ui_element_labels[host]['cpu'] = pygame_gui.elements.ui_label.UILabel(
+                    relative_rect=pygame.Rect(440, y, 32, 64),
+                    text='cpu',
+                    manager=self.gui,
+                    object_id="#param_label"
+            )
+            for i in range(4):
+                self.ui_element_graphs[host][f"cpu{i}_percent"] = timegraph(
+                    pygame.Rect(472, y+(i*16), 328, 16),
+                    max_value=100.0,
+                    min_value=0.0
+                )
+
             y += config.line_height * 2.5
 
         self.data = {}
@@ -134,6 +148,29 @@ class RaspiStatus(app):
             params[l[0]] = l[1].strip().rstrip('kB')
         return params
 
+    def parse_procstat(self, data):
+        stat = data.get('stat')
+        if not stat:
+            return
+        statlines = [l for l in stat.split('\n') if l.startswith('cpu') and not l.startswith('cpu ')]
+        for line in statlines:
+            lp = line.split(" ")
+            cpu_num = int(lp[0][3])
+            nums = [int(x) for x in lp[1:]]
+
+            prev_idletime = data.get(f"cpu{cpu_num}_idletime", 0)
+            idletime = nums[3]
+
+            prev_totaltime = data.get(f"cpu{cpu_num}_totaltime", 0)
+            totaltime = sum(nums)
+
+            if totaltime == prev_totaltime: # no time passed since last measurement
+                return
+
+            data[f"cpu{cpu_num}_percent"] = 1.0 - ((idletime - prev_idletime) / (totaltime - prev_totaltime))
+            data[f"cpu{cpu_num}_idletime"] = idletime
+            data[f"cpu{cpu_num}_totaltime"] = totaltime
+
     def update(self, dt):
         if self.data_updated:
             for hostconfig in self.config.hosts:
@@ -171,6 +208,12 @@ class RaspiStatus(app):
                     if el.text_colour != c:
                         el.text_colour = c
                         el.rebuild()
+
+                self.parse_procstat(data)
+                for g in ['cpu0_percent', 'cpu1_percent', 'cpu2_percent', 'cpu3_percent']:
+                    cpu_percent = data.get(g)
+                    if cpu_percent:
+                        self.ui_element_graphs[host][g].datapoint(cpu_percent)
 
         super().update(dt)
 
@@ -222,6 +265,8 @@ class RaspiStatus(app):
                     self.data[host['host']]['volts_core'] = run_command('vcgencmd measure_volts core')
                     self.data[host['host']]['temp'] = run_command('vcgencmd measure_temp')
                     self.data[host['host']]['meminfo'] = run_command('cat /proc/meminfo')
+                    self.data[host['host']]['stat'] = run_command('cat /proc/stat')
+
 
                     self.data[host['host']]['status'] = ''
 

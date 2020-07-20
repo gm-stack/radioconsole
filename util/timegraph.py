@@ -2,12 +2,12 @@ import pygame
 from pygame import surface
 
 class timegraph(object):
-    def __init__(self, rect):
+    def __init__(self, rect, max_value=None, min_value=None):
         self.bounds = rect
         self.surface = surface.Surface((rect.width, rect.height))
         self.data = []
-        self.min_value = None
-        self.max_value = None
+        self.min_value = max_value
+        self.max_value = min_value
         self.redraw()
 
     def datapoint(self, data):
