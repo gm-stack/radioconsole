@@ -87,6 +87,7 @@ class RaspiStatus(app):
             y += config.line_height * 2.5
 
         self.data = {}
+        self.host_updated = {host['host']: True for host in self.config.hosts}
 
         for host in self.config.hosts:
             create_ui(host['host'])
@@ -172,9 +173,10 @@ class RaspiStatus(app):
             data[f"cpu{cpu_num}_totaltime"] = totaltime
 
     def update(self, dt):
-        if self.data_updated:
-            for hostconfig in self.config.hosts:
-                host = hostconfig['host']
+        for hostconfig in self.config.hosts:
+            host = hostconfig['host']
+            if self.host_updated[host]:
+                self.host_updated[host] = False
                 data = self.data[host]
                 data.update(self.parse_vc_throttle_status(data.get('throttled')))
                 data['id'] = f"{data.get('hostname', '')}: {data.get('model', '')}" \
@@ -270,14 +272,18 @@ class RaspiStatus(app):
 
                     self.data[host['host']]['status'] = ''
 
+                    self.host_updated[host['host']] = True
                     self.data_updated = True
                     time.sleep(self.config.refresh_seconds)
 
             except OSError as e:
                 self.data[host['host']]['status'] = f"Connection error: {str(e)}"
+                self.host_updated[host['host']] = True
                 self.data_updated = True
+
             except paramiko.SSHException as e:
                 self.data[host['host']]['status'] = f"SSH error: {str(e)}"
+                self.host_updated[host['host']] = True
                 self.data_updated = True
 
             time.sleep(self.config.refresh_seconds)
