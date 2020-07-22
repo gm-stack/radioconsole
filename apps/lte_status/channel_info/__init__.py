@@ -6,8 +6,8 @@ def add_band_info(band):
     return {
         **band,
         'band_name': band_name(band['band']),
-        'freq': f"{earfcn_to_freq(band['earfcn'])}Mhz",
-        'bandwidth': f"{band['bandwidth']}Mhz",
+        'freq': f"{earfcn_to_freq(band['earfcn'])}Mhz" if band['band'] else '',
+        'bandwidth': f"{band['bandwidth']}Mhz" if band['band'] else '',
     }
 
 def add_channel_info(conn_info):
@@ -18,6 +18,7 @@ def add_channel_info(conn_info):
     }
 
 def band_name(band):
+    if not band: return ''
     bandnum = int(band[1:]) # drop the initial 'B'
     return "{} {}".format(band, bt[bandnum]['name'])
 

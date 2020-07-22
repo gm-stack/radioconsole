@@ -4,27 +4,56 @@ import requests
 from .. import channel_info
 
 class RooterBackend(object):
+    sysauth = None
     def __init__(self, cfg):
-        print("logging in...")
-        r = requests.post('http://172.17.0.254/cgi-bin/luci/admin/login')
-        #login_cookie = r.cookies
-        #login_cookie =
+        self.config = cfg
+        self.login()
 
-    def fetch_stats(self):
-        cookies = {
-            'sysauth': '694549bc88370c5ac37726c4e46c555d'
-        }
-        r = requests.get('http://172.17.0.254/cgi-bin/luci/admin/modem/get_csq', cookies=cookies)
-        r.raise_for_status()
-        return self.parse(r.text)
+    def login(self):
+        print("logging in")
+        r = requests.post(
+            f"http://{self.config.host}/cgi-bin/luci",
+            data={
+                'luci_username': self.config.username,
+                'luci_password': self.config.password
+            },
+            allow_redirects=False
+        )
+        if r.status_code == 302:
+            self.sysauth = r.cookies['sysauth']
+            print("login success")
+        else:
+            self.sysauth = None
+            print("login failed")
+
+    def fetch_stats(self):            
+        if self.sysauth:
+            r = requests.get(
+                'http://172.17.0.254/cgi-bin/luci/admin/modem/get_csq', 
+                cookies={'sysauth': self.sysauth}
+            )
+
+            r.raise_for_status()
+            return self.parse(r.text)
+        else:
+            return {'mode': 'login failed'}
+            self.login()
 
     @classmethod
     def parse_band(cls, band):
+        if band == '-':
+            return '', 0
         band = band.split(" ")
         return band[0], int(band[2])
 
     @classmethod
     def parse_bands_ch(cls, bands, earfcns):
+        if not earfcns:
+            return [{
+                'band': '',
+                'bandwidth': '',
+                'earfcn': ''
+            }]
         bandlist = bands.split(" aggregated with:<br />")
 
         res = []
@@ -37,22 +66,36 @@ class RooterBackend(object):
             })
 
         return res
+    
+    @classmethod
+    def csq_to_dbm(cls, csq):
+        try:
+            return str(-113 + (int(csq) * 2))
+        except ValueError:
+            return ''
+    
+    @classmethod
+    def parse_earfcns(cls, channel):
+        try:
+            return [int(x) for x in channel.split(", ")]
+        except ValueError:
+            return []
 
     @classmethod
     def parse(cls, lte_stats):
         d = {k: v.strip() for k, v in json.loads(lte_stats).items()}
-        earfcns = [int(x) for x in d['channel'].split(", ")]
+        earfcns = cls.parse_earfcns(d['channel'])
 
         return channel_info.add_channel_info({
             'bands': cls.parse_bands_ch(d['lband'], earfcns),
             'mode': d['mode'],
             'modem': d['modem'],
-            'down': d['down'],
-            'ecio': d['ecio'],
+            'netmode': d['netmode'],
+            'rsrq': d['ecio'].rstrip(' (RSRQ)dB'),
             'lac': d['lac'] + ' ' + d['lacn'].strip(),
-            'per': d['per'],
+            'rssi': cls.csq_to_dbm(d['csq']),
             'rnc': d['rnc'],
             'rncn': d['rncn'],
-            'rscp': d['rscp'],
-            'temp': d['tempur'],
+            'rsrp': d['rscp'].rstrip(' (RSRP)dBm'),
+            'temp': d['tempur'].rstrip('Â°C'),
         })

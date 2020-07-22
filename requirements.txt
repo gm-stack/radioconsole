@@ -1,3 +1,4 @@
+requests
 numpy
 scipy
 pyrtlsdr
