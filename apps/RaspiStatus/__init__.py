@@ -8,12 +8,13 @@ import paramiko
 import crash_handler
 from AppManager.app import app
 from config_reader import cfg
-from util import timegraph
+from util import timegraph, stat_display, stat_label, stat_view, stat_view_graph, extract_number
 
 class RaspiStatus(app):
     ui_element_labels = {}
     ui_element_values = {}
     ui_element_graphs = {}
+    cpu_graph_y = {}
 
     def __init__(self, bounds, config, display):
         super().__init__(bounds, config, display)
@@ -27,62 +28,43 @@ class RaspiStatus(app):
             self.ui_element_values[host] = {}
             self.ui_element_graphs[host] = {}
 
-            self.ui_element_values[host]['id'] = pygame_gui.elements.ui_label.UILabel(
+            self.ui_element_values[host]['id'] = stat_label(
                 relative_rect=pygame.Rect(0, y, 800, 32),
-                text='', manager=self.gui, object_id="#param_label"
+                text='', manager=self.gui
             )
-
             y += config.line_height
 
-            def create_ui_elements(l):
-                nonlocal y
-                for ui_element in l:
-                    self.ui_element_labels[host][ui_element] = pygame_gui.elements.ui_label.UILabel(
-                        relative_rect=pygame.Rect(0, y, 128, 32),
-                        text=ui_element,
-                        manager=self.gui,
-                        object_id="#param_label"
-                    )
-                    self.ui_element_values[host][ui_element] = pygame_gui.elements.ui_label.UILabel(
-                        relative_rect=pygame.Rect(128, y, 128, 32),
-                        text='',
-                        manager=self.gui,
-                        object_id="#param_value"
-                    )
-                    self.ui_element_graphs[host][ui_element] = timegraph(
-                        pygame.Rect(256, y, 544, 32)
-                    )
-
-                    y += config.line_height
-
-            create_ui_elements(['frequency', 'cpu_temp', 'free_mem'])
+            for ui_element, unit in {'frequency': '', 'cpu_temp': "\N{DEGREE SIGN}C", 'free_mem': 'MB'}.items():
+                self.ui_element_graphs[host][ui_element] = stat_view_graph(
+                    relative_rect=pygame.Rect(0, y, 800, 32),
+                    text_w=256,
+                    name=ui_element,
+                    manager=self.gui,
+                    unit=unit
+                )
+                y += config.line_height
 
             for i, ui_element in enumerate(['undervolt', 'freqcap', 'core_throttled', 'templimit']):
-                self.ui_element_labels[host][ui_element] = pygame_gui.elements.ui_label.UILabel(
-                    relative_rect=pygame.Rect(i*110, y, 110, 32),
-                    text=ui_element,
+                self.ui_element_values[host][ui_element] = stat_view(
+                    relative_rect=pygame.Rect(i*110, y, 110, 64),
+                    name=ui_element,
                     manager=self.gui,
-                    object_id="#param_label"
-                )
-                self.ui_element_values[host][ui_element] = pygame_gui.elements.ui_label.UILabel(
-                    relative_rect=pygame.Rect(i*110, y+config.line_height, 110, 32),
-                    text='',
-                    manager=self.gui,
-                    object_id="#param_value"
+                    split='tb',
+                    colourmap={
+                        'ALERT': (255, 0, 0, 255),
+                        'PREV': (255, 255, 0, 255),
+                        'OK': (0, 255, 0, 255),
+                        None: (127, 127, 127, 255)
+                    },
+                    colourmap_mode='equals'
                 )
 
-            self.ui_element_labels[host]['cpu'] = pygame_gui.elements.ui_label.UILabel(
-                    relative_rect=pygame.Rect(440, y, 32, 64),
-                    text='cpu',
-                    manager=self.gui,
-                    object_id="#param_label"
+            self.ui_element_labels[host]['cpu'] = stat_label(
+                relative_rect=pygame.Rect(440, y, 32, 64),
+                text='cpu',
+                manager=self.gui
             )
-            for i in range(4):
-                self.ui_element_graphs[host][f"cpu{i}_percent"] = timegraph(
-                    pygame.Rect(472, y+(i*16), 328, 16),
-                    max_value=100.0,
-                    min_value=0.0
-                )
+            self.cpu_graph_y[host] = y
 
             y += config.line_height * 2.5
 
@@ -98,8 +80,6 @@ class RaspiStatus(app):
                 daemon=True
             )
             self.backend_thread.start()
-
-
 
     def parse_vc_throttle_status(self, status):
         if not status:
@@ -123,18 +103,6 @@ class RaspiStatus(app):
             'templimit': 'ALERT' if templimit else ('PREV' if prev_templimit else 'OK')
         }
 
-    def colour_for_throttle_status(self, status):
-        return {
-            'ALERT': (255, 0, 0, 255),
-            'PREV': (255, 255, 0, 255),
-            'OK': (0, 255, 0, 255)
-        }.get(status, (127, 127, 127, 255))
-
-    def frequency(self, freq):
-        if not freq:
-            return
-        return int(freq.split("=")[1])
-
     def mb(self, kb):
         if not kb:
             return ''
@@ -154,6 +122,7 @@ class RaspiStatus(app):
         if not stat:
             return
         statlines = [l for l in stat.split('\n') if l.startswith('cpu') and not l.startswith('cpu ')]
+        data['n_cpus'] = len(statlines)
         for line in statlines:
             lp = line.split(" ")
             cpu_num = int(lp[0][3])
@@ -179,43 +148,45 @@ class RaspiStatus(app):
                 self.host_updated[host] = False
                 data = self.data[host]
                 data.update(self.parse_vc_throttle_status(data.get('throttled')))
+
                 data['id'] = f"{data.get('hostname', '')}: {data.get('model', '')}" \
                     if not data.get('status') else data['status']
 
-                volts = data.get('volts_core', '').split('=')[-1].rstrip('V')
-                freq = self.frequency(data.get('clock_arm'))
+                volts = extract_number(data.get('volts_core'))
+                freq = extract_number(data.get('clock_arm'))
                 if freq and volts:
+                    displayval = f"{freq/1000000.0:.0f}MHz/{float(volts):.2f}V"
+                    self.ui_element_graphs[host]['frequency'].update(freq, displayval)
 
-                    data['frequency'] = f"{freq/1000000.0:.0f}MHz/{float(volts):.2f}V"
-                    self.ui_element_graphs[host]['frequency'].datapoint(freq)
-
-                temp = data.get('temp', '').split('=')[-1].rstrip("'C")
-                if temp:
-                    data['cpu_temp'] = f"{temp}\N{DEGREE SIGN}C"
-                    self.ui_element_graphs[host]['cpu_temp'].datapoint(float(temp))
+                self.ui_element_graphs[host]['cpu_temp'].update(extract_number(data.get('temp')))
 
                 data.update(self.parse_meminfo(data.get('meminfo')))
 
-                mem_available = data.get('MemAvailable')
+                mem_available = extract_number(data.get('MemAvailable'))
                 if mem_available:
-                    data['free_mem'] = self.mb(mem_available)
-                    self.ui_element_graphs[host]['free_mem'].datapoint(float(mem_available)/1024)
+                    self.ui_element_graphs[host]['free_mem'].update(mem_available/1024)
 
                 for key, gui in self.ui_element_values[host].items():
                     gui.set_text(data.get(key, ''))
 
-                for ui_element in ['undervolt', 'freqcap', 'core_throttled', 'templimit']:
-                    el = self.ui_element_values[host][ui_element]
-                    c = self.colour_for_throttle_status(data.get(ui_element))
-                    if el.text_colour != c:
-                        el.text_colour = c
-                        el.rebuild()
-
                 self.parse_procstat(data)
-                for g in ['cpu0_percent', 'cpu1_percent', 'cpu2_percent', 'cpu3_percent']:
-                    cpu_percent = data.get(g)
-                    if cpu_percent:
-                        self.ui_element_graphs[host][g].datapoint(cpu_percent)
+                if 'n_cpus' in data:
+                    if host in self.cpu_graph_y:
+                        y = self.cpu_graph_y[host]
+                        del self.cpu_graph_y[host]
+                        cpu_h = int(64 / data['n_cpus'])
+                        for i in range(data['n_cpus']):
+                            self.ui_element_graphs[host][f"cpu{i}_percent"] = timegraph(
+                                pygame.Rect(472, y+(i*cpu_h), 328, cpu_h),
+                                max_value=100.0,
+                                min_value=0.0
+                            )
+
+                    for i in range(data['n_cpus']):
+                        g = f"cpu{i}_percent"
+                        cpu_percent = data.get(g)
+                        if cpu_percent:
+                            self.ui_element_graphs[host][g].datapoint(cpu_percent)
 
         super().update(dt)
 
