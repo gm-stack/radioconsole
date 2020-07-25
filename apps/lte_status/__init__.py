@@ -3,13 +3,12 @@ import time
 
 import requests
 import pygame
-import pygame_gui
 
 import crash_handler
 from config_reader import cfg
 from AppManager.app import app
 from .backends import backends
-from util import timegraph, stat_view, stat_view_graph, extract_number
+from util import timegraph, stat_label, stat_display, stat_view, stat_view_graph, extract_number
 
 class lte_status(app):
     backend = None
@@ -41,38 +40,33 @@ class lte_status(app):
 
         y += config.line_height / 2
 
-        pygame_gui.elements.ui_label.UILabel(
+        stat_label(
             relative_rect=pygame.Rect(128, y, 128, 32),
             text='CA 0',
-            manager=self.gui,
-            object_id="#param_label"
+            manager=self.gui
         )
-        pygame_gui.elements.ui_label.UILabel(
+        stat_label(
             relative_rect=pygame.Rect(256, y, 128, 32),
             text='CA 1',
-            manager=self.gui,
-            object_id="#param_label"
+            manager=self.gui
         )
         y += config.line_height
 
         for ui_element in ['band_name', 'freq', 'bandwidth']:
-            self.band_labels[ui_element] = pygame_gui.elements.ui_label.UILabel(
+            self.band_labels[ui_element] = stat_label(
                 relative_rect=pygame.Rect(0, y, 128, 32),
                 text=ui_element,
-                manager=self.gui,
-                object_id="#param_label"
+                manager=self.gui
             )
-            self.band_values[0][ui_element] = pygame_gui.elements.ui_label.UILabel(
+            self.band_values[0][ui_element] = stat_display(
                 relative_rect=pygame.Rect(128, y, 128, 32),
                 text='',
-                manager=self.gui,
-                object_id="#param_value"
+                manager=self.gui
             )
-            self.band_values[1][ui_element] = pygame_gui.elements.ui_label.UILabel(
+            self.band_values[1][ui_element] = stat_display(
                 relative_rect=pygame.Rect(256, y, 128, 32),
                 text='',
-                manager=self.gui,
-                object_id="#param_value_none"
+                manager=self.gui
             )
             y += config.line_height
 

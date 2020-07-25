@@ -2,7 +2,6 @@ import time
 import threading
 
 import pygame
-import pygame_gui
 import paramiko
 
 import crash_handler
