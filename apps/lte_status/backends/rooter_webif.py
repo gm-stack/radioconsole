@@ -7,7 +7,6 @@ class RooterBackend(object):
     sysauth = None
     def __init__(self, cfg):
         self.config = cfg
-        self.login()
 
     def login(self):
         print("logging in")
@@ -17,7 +16,8 @@ class RooterBackend(object):
                 'luci_username': self.config.username,
                 'luci_password': self.config.password
             },
-            allow_redirects=False
+            allow_redirects=False,
+            timeout=5
         )
         if r.status_code == 302:
             self.sysauth = r.cookies['sysauth']
@@ -26,17 +26,22 @@ class RooterBackend(object):
             self.sysauth = None
             print("login failed")
 
-    def fetch_stats(self):            
+    def fetch_stats(self):
+        if not self.sysauth:
+            self.login()
         if self.sysauth:
             r = requests.get(
-                'http://172.17.0.254/cgi-bin/luci/admin/modem/get_csq', 
-                cookies={'sysauth': self.sysauth}
+                f'http://{self.config.host}/cgi-bin/luci/admin/modem/get_csq', 
+                cookies={'sysauth': self.sysauth},
+                timeout=5
             )
+            if r.status_code != 200:
+                self.sysauth = None
+                return {}
 
-            r.raise_for_status()
             return self.parse(r.text)
         else:
-            return {'mode': 'login failed'}
+            return {'mode': 'Login failed, retrying...'}
             self.login()
 
     @classmethod

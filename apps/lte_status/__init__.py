@@ -1,6 +1,7 @@
 import threading
 import time
 
+import requests
 import pygame
 import pygame_gui
 
@@ -8,7 +9,7 @@ import crash_handler
 from config_reader import cfg
 from AppManager.app import app
 from .backends import backends
-from util import timegraph
+from util import timegraph, stat_view, stat_view_graph, extract_number
 
 class lte_status(app):
     backend = None
@@ -30,17 +31,11 @@ class lte_status(app):
         y = display.TOP_BAR_SIZE
 
         for ui_element in ['mode', 'modem', 'lac']:
-            self.ui_element_labels[ui_element] = pygame_gui.elements.ui_label.UILabel(
-                relative_rect=pygame.Rect(0, y, 128, 32),
-                text=ui_element,
-                manager=self.gui,
-                object_id="#param_label"
-            )
-            self.ui_element_values[ui_element] = pygame_gui.elements.ui_label.UILabel(
-                relative_rect=pygame.Rect(128, y, 384, 32),
-                text='',
-                manager=self.gui,
-                object_id="#param_value"
+            self.ui_element_values[ui_element] = stat_view(
+                relative_rect=pygame.Rect(0, y, 512, 32),
+                label_s=128,
+                name=ui_element,
+                manager=self.gui
             )
             y += config.line_height
 
@@ -83,98 +78,72 @@ class lte_status(app):
 
         y += config.line_height / 2
 
-        for ui_element in ['rsrq', 'rsrp', 'rssi', 'temp', 'netmode']:
-            self.ui_element_labels[ui_element] = pygame_gui.elements.ui_label.UILabel(
-                relative_rect=pygame.Rect(0, y, 128, 32),
-                text=ui_element,
+        for ui_element, kwargs in {
+            'rsrq': {
+                'unit': ' dB',
+                'colourmap': {
+                    -10: (0, 255, 0, 255),
+                    -15: (255, 255, 0, 255),
+                    -20: (255, 165, 0, 255),
+                    None: (255, 0, 0, 255)
+                }
+            }, 
+            'rsrp': {
+                'unit': ' dBm',
+                'colourmap': {
+                    -80: (0, 255, 0, 255),
+                    -90: (255, 255, 0, 255),
+                    -100: (255, 165, 0, 255),
+                    None: (255, 0, 0, 255)
+                }
+            }, 
+            'rssi': {
+                'unit': ' dBm',
+                'colourmap': {
+                    -65: (0, 255, 0, 255),
+                    -75: (255, 255, 0, 255),
+                    -85: (255, 165, 0, 255),
+                    None: (255, 0, 0, 255)
+                }
+            }, 
+            'temp': {
+                'unit': "\N{DEGREE SIGN}C",
+                'colourmap': {
+                    70: (255, 165, 0, 255),
+                    80: (255, 0, 0, 255),
+                    None: (0, 255, 0, 255)
+                }
+            }, 
+            'netmode': {'unit': ''}
+        }.items():
+            self.ui_element_graphs[ui_element] = stat_view_graph(
+                relative_rect=pygame.Rect(0, y, 800, 32),
+                text_w=256,
+                name=ui_element,
                 manager=self.gui,
-                object_id="#param_label"
+                colourmap_mode='gt',
+                **kwargs
             )
-            self.ui_element_values[ui_element] = pygame_gui.elements.ui_label.UILabel(
-                relative_rect=pygame.Rect(128, y, 128, 32),
-                text='',
-                manager=self.gui,
-                object_id="#param_value"
-            )
-            self.ui_element_graphs[ui_element] = timegraph(
-                pygame.Rect(256, y, 544, 32)
-            )
-            
             y += config.line_height
-
 
     @crash_handler.monitor_thread
     def backend_loop(self):
         while True:
-            self.data = self.backend.fetch_stats()
+            try:
+                self.data = self.backend.fetch_stats()
+            except requests.exceptions.RequestException as e:
+                self.data = {'mode': e.args[0].reason.args[0].split(':')[-1]}
             self.data_updated = True
             time.sleep(1.0)
 
-    def rsrq_to_colour(self, rsrq):
-        if rsrq > -10:
-            return (0, 255, 0, 255)
-        elif rsrq > -15:
-            return (255, 255, 0, 255)
-        elif rsrq > -20:
-            return (255, 165, 0, 255)
-        return (255, 0, 0, 255)
-    
-    def rsrp_to_colour(self, rsrp):
-        if rsrp > -80:
-            return (0, 255, 0, 255)
-        elif rsrp > -90:
-            return (255, 255, 0, 255)
-        elif rsrp > -100:
-            return (255, 165, 0, 255)
-        return (255, 0, 0, 255)
-    
-    def rssi_to_colour(self, rssi):
-        if rssi > -65:
-            return (0, 255, 0, 255)
-        elif rssi > -75:
-            return (255, 255, 0, 255)
-        elif rssi > -85:
-            return (255, 165, 0, 255)
-        return (255, 0, 0, 255)
-    
-    def temp_to_colour(self, temp):
-        if temp > 70:
-            return (255, 165, 0, 255)
-        if temp > 80:
-            return (255, 0, 0, 255)
-        return (0, 255, 0, 255)
-
     def update(self, dt):
         if self.data_updated:
-            for key in ['mode', 'modem', 'lac', 'netmode']:
+            for key in ['mode', 'modem', 'lac']:
                 self.ui_element_values[key].set_text(self.data.get(key, ''))
             
-
-            colourfuncs = {
-                'rsrq': self.rsrq_to_colour,
-                'rsrp': self.rsrp_to_colour,
-                'rssi': self.rssi_to_colour,
-                'temp': self.temp_to_colour
-            }
             for key in ['rsrq', 'rsrp', 'rssi', 'temp']:
-                unit = "\N{DEGREE SIGN}C" if key == 'temp' else " dB" if key == 'rsrq' else " dBm"
-                value = self.data.get(key)
-                if value:
-                    try:
-                        value = float(value)
-                        self.ui_element_values[key].set_text(f"{value:.1f}{unit}")
-                        self.ui_element_graphs[key].datapoint(value)
-                        if key in colourfuncs:
-                            colour = colourfuncs[key](value)
-                            if self.ui_element_values[key].text_colour != colour:
-                                self.ui_element_values[key].text_colour = colour
-                                self.ui_element_values[key].rebuild()
-                    except ValueError:
-                        self.ui_element_values[key].set_text("")
-                else:
-                    self.ui_element_values[key].set_text("")
-                    #self.ui_element_graphs[key].datapoint(None)
-            
+                value = extract_number(self.data.get(key))
+                self.ui_element_graphs[key].update(value)
 
             if 'bands' in self.data:
                 for key, gui in self.band_values[0].items():

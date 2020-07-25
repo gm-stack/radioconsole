@@ -1,6 +1,6 @@
 import re
 
-pattern = re.compile(r'([0-9.]+)')
+pattern = re.compile(r'(-?[0-9.]+)')
 
 def extract_number(number):
     if number is None:

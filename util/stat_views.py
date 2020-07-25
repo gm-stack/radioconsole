@@ -14,20 +14,25 @@ class stat_label(pygame_gui.elements.ui_label.UILabel):
         super().__init__(*args, **kwargs)
 
 class stat_view(object):
-    def __init__(self, relative_rect, name, manager, split='lr', colourmap={}, colourmap_mode=None, unit=''):
+    def __init__(self, relative_rect, name, manager, label_s=None, split='lr', colourmap={}, colourmap_mode=None, unit=''):
         self.colourmap = colourmap
         self.colourmap_mode = colourmap_mode
+        
+        if colourmap_mode == 'gt':
+            self.colourmap_list = [k for k in list(colourmap.keys()) if k is not None]
+            self.colourmap_list.sort(reverse=True)
+
         self.unit = unit
 
         rr = relative_rect
         if split == 'lr':
-            hw = int(rr.width / 2)
+            hw = label_s if label_s else int(rr.width / 2)
             label_rect = pygame.Rect(rr.x, rr.y, hw, rr.height)
-            value_rect = pygame.Rect(rr.x + hw, rr.y, hw, rr.height)
+            value_rect = pygame.Rect(rr.x + hw, rr.y, rr.width - hw, rr.height)
         elif split == 'tb':
-            hh = int(rr.height / 2)
+            hh = label_s if label_s else int(rr.height / 2)
             label_rect = pygame.Rect(rr.x, rr.y, rr.width, hh)
-            value_rect = pygame.Rect(rr.x, rr.y + hh, rr.width, hh)
+            value_rect = pygame.Rect(rr.x, rr.y + hh, rr.width, rr.height - hh)
         else:
             raise ValueError("split must be 'lr' or 'tb'")
 
@@ -54,9 +59,18 @@ class stat_view(object):
         if isinstance(value, int):
             self.set_text(f"{value:d}{self.unit}")
         if isinstance(value, float):
+            self.text_colour_from_colourmap(value)
             self.set_text(f"{value:.1f}{self.unit}")
         if isinstance(value, str):
             self.set_text(value)
+    
+    def text_colour_from_colourmap(self, value):
+        if self.colourmap_mode == 'gt':
+            cmaps = [x for x in self.colourmap_list if value > x]
+            if cmaps:
+                self.set_text_colour(self.colourmap[cmaps[0]])
+            elif None in self.colourmap:
+                self.set_text_colour(self.colourmap[None])
 
     def set_text_colour(self, colour):
         if self.value.text_colour != colour:
