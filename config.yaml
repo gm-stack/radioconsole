@@ -37,6 +37,11 @@ modules:
       backend: test
       line_height: 32
 
+waterfall_server:
+  listen_port: 45362
+  device_serial: '00000007'
+  current_freq: 7074000
+
 theme:
   defaults:
     colours:

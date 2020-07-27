@@ -4,20 +4,21 @@ signal.signal(signal.SIGHUP, lambda s, f: None)
 
 import socket
 from types import SimpleNamespace
+import sys
 
 import FFTData
 import time
 import struct
 import rtlsdr
 
-port = 45362
+sys.path.append('../..')
+from config_reader import cfg
 
+port = cfg.waterfall_server.listen_port
 
 class FFTWaterfall(object):
     def __init__(self):
-        self.config = SimpleNamespace(
-            CURRENT_FREQ=7074000
-        )
+        self.config = cfg.waterfall_server
         self.rf = FFTData.FFTData(
             provider='rtlsdr',
             config=self.config
@@ -43,7 +44,7 @@ class FFTWaterfall(object):
             self.display_bandwidth = self.abs_freq_high - self.abs_freq_low
             self.num_fft_bins = int((total_fft_bw / self.display_bandwidth) * self.output_w)
 
-            centre_freq = self.config.CURRENT_FREQ
+            centre_freq = self.config.current_freq
             centre_bin = self.num_fft_bins // 2
             hz_per_pixel = total_fft_bw / float(self.num_fft_bins)
 
@@ -59,7 +60,7 @@ class FFTWaterfall(object):
             else:
                 self.num_fft_bins = int((total_fft_bw / self.display_bandwidth) * self.output_w)
 
-                centre_freq = self.config.CURRENT_FREQ
+                centre_freq = self.config.current_freq
                 centre_bin = self.num_fft_bins // 2
                 hz_per_pixel = total_fft_bw / float(self.num_fft_bins)
 

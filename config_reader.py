@@ -14,6 +14,9 @@ json.dump(_config['theme'], theme)
 theme.flush()
 
 class cfg:
+    waterfall_server = SimpleNamespace(
+        **_config.get('waterfall_server', {})
+    )
     display = SimpleNamespace(
         **_config['system']['display'],
         size=(_config['system']['display']['DISPLAY_W'], _config['system']['display']['DISPLAY_H'])

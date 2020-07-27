@@ -2,7 +2,8 @@ import rtlsdr
 
 class rtlsdr_samples(object):
     def __init__(self, cfg):
-        self.rtlsdr = rtlsdr.RtlSdr()
+        print(f"opening rtlsdr serial number {cfg.device_serial}")
+        self.rtlsdr = rtlsdr.RtlSdr(serial_number=cfg.device_serial)
         
     def retune(self, if_freq, sample_rate):
         self.rtlsdr.set_center_freq(if_freq)
