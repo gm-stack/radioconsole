@@ -1,0 +1,21 @@
+# cp gpio_shutdown.service /etc/systemd/system/
+# systemctl enable gpio_shutdown
+# systemctl start  gpio_shutdown
+
+[Unit]
+Description=Radioconsole gpio_shutdown
+
+[Service]
+Type=simple
+WorkingDirectory=/home/pi/radioconsole/
+ExecStart=/usr/bin/python3 -u /home/pi/radioconsole/gpio_shutdown.py 18 300 reboot
+Restart=always
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=gpio-shutdown
+User=root
+Group=root
+SendSIGHUP=no
+
+[Install]
+WantedBy=multi-user.target
