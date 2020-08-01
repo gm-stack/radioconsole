@@ -109,6 +109,7 @@ class WaterfallDisplay(app):
         self.display_bandwidth = None
 
         self.absmode = False
+        self.current_freq = None
         self.abs_freq_low = 7000000
         self.abs_freq_high = 7300000
 
@@ -176,7 +177,7 @@ class WaterfallDisplay(app):
         if self.absmode:
             centre_freq = (self.abs_freq_low + self.abs_freq_high) // 2
         else:
-            centre_freq = self.config.CURRENT_FREQ
+            centre_freq = self.current_freq
         centre_pixel = self.bounds.w / 2
         hz_per_pixel = (self.display_bandwidth) / float(self.bounds.w)
 
@@ -190,7 +191,7 @@ class WaterfallDisplay(app):
         line_colour = (255, 0, 0) if highlight else (0, 128, 0)
 
         label = f"{int(freq/1000)}" if not relative \
-            else f"{(freq-self.config.CURRENT_FREQ)/1000:+.1f}k".replace(".0", "")
+            else f"{(freq-self.current_freq)/1000:+.1f}k".replace(".0", "")
 
         text = font.render(label, True, text_colour)
         text_w = text.get_width()
@@ -254,12 +255,10 @@ class WaterfallDisplay(app):
                             self.params_updated = False
                             print("updated params")
                             d = struct.pack(
-                                '!BBHIIIBBxxxxxx', # 24 bytes
+                                '!BBHIBBxxxxxxxxxxxxxx', # 24 bytes
                                 0x00, # version
                                 0x00, # message (parameters)
                                 self.bounds.w,
-                                self.config.IF_FREQ,
-                                self.config.SAMPLE_RATE,
                                 self.rel_bandwidth,
                                 self.absmode,
                                 self.decimate_zoom
@@ -267,7 +266,7 @@ class WaterfallDisplay(app):
                             s.sendall(d)
 
                         # todo: parse header
-                        frame_size = self.bounds.w + 2
+                        frame_size = self.bounds.w + 6
                         data = bytes()
                         while len(data) < frame_size:
                             rcvd = s.recv(frame_size-len(data))
@@ -275,7 +274,11 @@ class WaterfallDisplay(app):
                                 self.set_net_status('Reconnecting...')
                                 raise OSError("Disconnected")
                             data += rcvd
-                        self.fft_queue.put_nowait(data[2:])
+                        d = struct.unpack("!BBI", data[:6])
+                        ver, msg, freq = d
+                        if msg == 0x01:
+                            self.current_freq = freq
+                            self.fft_queue.put_nowait(data[6:])
 
 
                 except OSError as e:
@@ -307,13 +310,14 @@ class WaterfallDisplay(app):
         self.gui.draw_ui(screen)
 
         if self.absmode:
-            self.draw_marker(self.config.CURRENT_FREQ, screen, highlight=True)
-            self.draw_marker(7000000, screen)
-            self.draw_marker(7100000, screen)
-            self.draw_marker(7200000, screen)
-            self.draw_marker(7300000, screen)
+            if self.current_freq is not None:
+                self.draw_marker(self.current_freq, screen, highlight=True)
+                self.draw_marker(7000000, screen)
+                self.draw_marker(7100000, screen)
+                self.draw_marker(7200000, screen)
+                self.draw_marker(7300000, screen)
         else:
-            self.draw_marker(self.config.CURRENT_FREQ, screen, highlight=True, relative=True)
+            self.draw_marker(self.current_freq, screen, highlight=True, relative=True)
             #for m in self.REL_BANDWIDTHS[self.rel_bandwidth]:
             #    self.draw_marker(config.CURRENT_FREQ + m, screen, relative=True)
             #    self.draw_marker(config.CURRENT_FREQ - m, screen, relative=True)
