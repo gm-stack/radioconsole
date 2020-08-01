@@ -7,3 +7,4 @@ pyyaml
 pygame_gui
 gps
 paramiko
+pyserial

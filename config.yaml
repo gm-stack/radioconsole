@@ -40,7 +40,8 @@ modules:
 waterfall_server:
   listen_port: 45362
   device_serial: '00000007'
-  current_freq: 7074000
+  if_freq: 124488500 # 124487000 + 1500
+  sample_rate: 1200000
 
 theme:
   defaults:

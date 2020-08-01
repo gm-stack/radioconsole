@@ -7,6 +7,7 @@ from types import SimpleNamespace
 import sys
 
 import FFTData
+import RadioSettings
 import time
 import struct
 import rtlsdr
@@ -16,11 +17,17 @@ from config_reader import cfg
 
 port = cfg.waterfall_server.listen_port
 
+CURRENT_FREQ = 7100000
+
 class FFTWaterfall(object):
     def __init__(self):
         self.config = cfg.waterfall_server
         self.rf = FFTData.FFTData(
             provider='rtlsdr',
+            config=self.config
+        )
+        self.rs = RadioSettings.RadioSettings(
+            provider='ci-v',
             config=self.config
         )
 
@@ -44,7 +51,7 @@ class FFTWaterfall(object):
             self.display_bandwidth = self.abs_freq_high - self.abs_freq_low
             self.num_fft_bins = int((total_fft_bw / self.display_bandwidth) * self.output_w)
 
-            centre_freq = self.config.current_freq
+            centre_freq = CURRENT_FREQ
             centre_bin = self.num_fft_bins // 2
             hz_per_pixel = total_fft_bw / float(self.num_fft_bins)
 
@@ -60,7 +67,7 @@ class FFTWaterfall(object):
             else:
                 self.num_fft_bins = int((total_fft_bw / self.display_bandwidth) * self.output_w)
 
-                centre_freq = self.config.current_freq
+                centre_freq = CURRENT_FREQ
                 centre_bin = self.num_fft_bins // 2
                 hz_per_pixel = total_fft_bw / float(self.num_fft_bins)
 
@@ -80,24 +87,25 @@ class FFTWaterfall(object):
 
 def parse_cmd_buffer(cmd_buffer):
     d = struct.unpack(
-        '!BBHIIIBBxxxxxx',
+        '!BBHIBBxxxxxxxxxxxxxx',
         cmd_buffer
     )
-    ver, msg, output_w, tune, sample_rate, relbw, absmode, decimate_zoom = d
+    ver, msg, output_w, relbw, absmode, decimate_zoom = d
     if ver != 0x00 or msg != 0x00:
         raise ValueError(f"invalid message: ver:{ver}, msg:{msg}")
     print(d)
-    
-    fft.tune = tune
-    fft.sample_rate = sample_rate
-    fft.retune(tune, sample_rate)
     
     fft.output_w = output_w
     fft.rel_bandwidth = relbw
     fft.absmode = bool(absmode)
     fft.decimate_zoom = bool(decimate_zoom)
 
-HEADER = struct.pack('BB', 0x00, 0x01)
+def send_fft_line():
+    global CURRENT_FREQ
+    CURRENT_FREQ = fft.rs.freq()
+    header = struct.pack('!BBI', 0x00, 0x01, CURRENT_FREQ)
+    fftd = fft.fft().astype('uint8').tobytes()
+    conn.sendall(header+fftd)
 
 MAXRATE = 30
 sample_every = 1.0 / MAXRATE
@@ -126,10 +134,8 @@ def handle_conn(conn, addr):
             if timesince < sample_every:
                 time.sleep(sample_every - timesince)
             
-            fftd = fft.fft().astype('uint8').tobytes()
-            
             try:
-                conn.sendall(HEADER+fftd)
+                send_fft_line()
             except (BrokenPipeError, ConnectionResetError, BlockingIOError):
                 return
             prev_sampletime = time.monotonic()
@@ -139,11 +145,15 @@ print("starting rtlsdr")
 while True:
     try:
         fft = FFTWaterfall()
+        fft.tune = cfg.waterfall_server.if_freq
+        fft.sample_rate = cfg.waterfall_server.sample_rate
+        fft.retune(fft.tune, fft.sample_rate)
         break
     except rtlsdr.rtlsdr.LibUSBError:
         time.sleep(5)
 
 print("rtlsdr started")
+
 
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
