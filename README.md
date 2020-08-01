@@ -64,6 +64,10 @@ modules:
         port: 22
 ```
 
+More than one host is supported:
+
+![raspi status](doc/status_2_hosts.png)
+
 ## LTE Status
 
 ![lte status](doc/lte_status.png)
@@ -137,7 +141,14 @@ modules:
 
 ## Waterfall Display
 
-(screenshot to come)
+![waterfall](doc/waterfall.png)
+Waterfall in Relative Mode, 75k bandwidth, decimation zoom
+
+![waterfall](doc/waterfall_zoomin.png)
+Waterfall in Relative Mode, 37.5k bandwidth, viewing a SSB signal
+
+![waterfall](doc/absmode.png)
+Waterfall in Absolute Mode, showing all of 40m, showing a few signals visible (my local noise floor is quite high). An Ionosonde can be seen sweeping up through the band.
 
 This module connects to a waterfall server which sends a FFT spectrum from a rtl-sdr dongle. Suggested usage is to connect the rtl-sdr to the first IF of the radio.
 
@@ -147,25 +158,30 @@ This module is still very much a work in progress.
 
 This is being used with an Icom 7100 that has a SDR-Kits PAT150M installed in it.
 
-The waterfall server is found at `apps/WaterfallDisplay/WaterfallServer.py`.
+``` yaml
+panadapter:
+  type: rtl_fft
+  display_name: panadapter
+  config:
+    HOST: 172.16.0.50 # host for the waterfall_server
+    PORT: 45362
+    INVERTED: true # swap I/Q
+    GRAPH_HEIGHT: 64
+    BUTTON_HEIGHT: 48
+    RF_MIN: 0
+    RF_MAX: 500
+    SAMPLE_PROVIDER: rtlsdr
+  ```
+
+The waterfall server is found at `apps/WaterfallDisplay/WaterfallServer.py`. It is configured as a top level entry in the same `config.yaml` file - it can be shared between radioconsole and the waterfall server if running on the same box.
 
 ``` yaml
-    panadapter:
-      type: rtl_fft
-      display_name: panadapter
-      config:
-        HOST: 172.16.0.50 # host for the waterfall_server
-        PORT: 45362
-        IF_FREQ: 124488500 # 124487000hz IF + 1500hz
-        SAMPLE_RATE: 1200000
-        INVERTED: true # swap I/Q
-        GRAPH_HEIGHT: 64
-        BUTTON_HEIGHT: 48
-        RF_MIN: 0
-        RF_MAX: 500
-        SAMPLE_PROVIDER: file
-        CURRENT_FREQ: 7055000 # this should be read from radio
-  ```
+waterfall_server:
+  listen_port: 45362
+  device_serial: '00000007'
+  if_freq: 124488500 # 124487000 + 1500
+  sample_rate: 1200000
+```
 
 # Mostly Raspberry Pi focused Installation Notes
 
