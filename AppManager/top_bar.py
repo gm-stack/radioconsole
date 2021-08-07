@@ -16,9 +16,15 @@ class top_bar(object):
             (cfg.display.DISPLAY_W, cfg.display.TOP_BAR_SIZE),
             cfg.theme_file
         )
-        self.appname_label = pygame_gui.elements.UIButton(
-            relative_rect=pygame.Rect(2, 2, 128, cfg.display.TOP_BAR_SIZE-4),
+        self.appname_label = pygame_gui.elements.UILabel(
+            relative_rect=pygame.Rect(132, 2, 256, cfg.display.TOP_BAR_SIZE-4),
             text='switcher',
+            manager=self.gui
+        )
+
+        self.back_to_switcher_button = pygame_gui.elements.UIButton(
+            relative_rect=pygame.Rect(2, 2, 128, cfg.display.TOP_BAR_SIZE-4),
+            text='to switcher',
             manager=self.gui
         )
 
@@ -42,5 +48,5 @@ class top_bar(object):
         if e.type == pygame.USEREVENT:
             self.redraw = True
             if e.user_type == pygame_gui.UI_BUTTON_PRESSED:
-                if e.ui_element == self.appname_label:
+                if e.ui_element == self.back_to_switcher_button:
                     self.switcher.switchFrontmostApp('switcher')
