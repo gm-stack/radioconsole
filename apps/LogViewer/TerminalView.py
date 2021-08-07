@@ -59,6 +59,15 @@ class TerminalView():
         self.char_h = max([x[self.default_colour].get_height() for x in self.precache_list.values()])
 
     def write(self, text, colour=None):
+        def newline():
+            self.terminal_x = 0
+            self.terminal_y += 1
+
+            if self.terminal_y == self.terminal_h: # we just newlined off the bottom, scroll the screen
+                self.terminal_y -= 1
+                self.text_surf.scroll(0,-self.char_h)
+                self.text_surf.fill((0, 0, 0), rect=(0, (self.terminal_h - 1) * self.char_h, self.W, self.char_h))
+
         if colour:
             self.current_colour = colour
         for char in text:
@@ -67,18 +76,16 @@ class TerminalView():
                 glyph = self.precache_list[char][self.current_colour]
                 self.text_surf.blit(glyph, (self.terminal_x * self.char_w, self.terminal_y * self.char_h))
                 self.terminal_x += 1
+                if self.terminal_x == self.terminal_w:
+                    newline()
             elif a == 9: # \t
                 self.terminal_x += 2
             elif a == 10: # \n
-                self.terminal_x = 0
-                self.terminal_y += 1
+                newline()
             else:
                 print(f"unknown control char {a}")
 
-            if self.terminal_y == self.terminal_h:
-                self.terminal_y -= 1
-                self.text_surf.scroll(0,-self.char_h)
-                self.text_surf.fill((0, 0, 0), rect=(0, (self.terminal_h - 1) * self.char_h, self.W, self.char_h))
+
 
     def draw(self, display):
         display.blit(self.text_surf, (self.X, self.Y), area=(0, 0, self.W, self.H))
