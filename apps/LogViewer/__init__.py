@@ -13,6 +13,8 @@ import crash_handler
 from AppManager.app import app
 from config_reader import cfg
 
+from .TerminalView import TerminalView
+
 class LogViewer(app):
     def __init__(self, bounds, config, display):
         super().__init__(bounds, config, display)
@@ -44,17 +46,24 @@ class LogViewer(app):
         buttons_h = (config.command_button_h + config.command_button_margin) * \
             int(math.ceil(len(config.commands) / config.command_buttons_x))
 
-        self.logtext = ""
+        #self.logtext = ""
 
-        self.log_view = pygame_gui.elements.UITextBox(
-            html_text='',
-            relative_rect=pygame.Rect(
-                0, cfg.display.TOP_BAR_SIZE,
-                cfg.display.DISPLAY_W,
-                cfg.display.DISPLAY_H - cfg.display.TOP_BAR_SIZE - \
-                    buttons_h - config.command_button_margin
-            ),
-            manager=self.gui
+        #self.log_view = pygame_gui.elements.UITextBox(
+        #    html_text='',
+        #    relative_rect=pygame.Rect(
+        #        0, cfg.display.TOP_BAR_SIZE,
+        #        cfg.display.DISPLAY_W,
+        #        cfg.display.DISPLAY_H - cfg.display.TOP_BAR_SIZE - \
+        #            buttons_h - config.command_button_margin
+        #    ),
+        #    manager=self.gui
+        #)
+
+        self.terminal_view = TerminalView(
+            x=0,
+            y=cfg.display.TOP_BAR_SIZE,
+            width=cfg.display.DISPLAY_W,
+            height=cfg.display.DISPLAY_H - cfg.display.TOP_BAR_SIZE - buttons_h - config.command_button_margin
         )
 
         self.backend_thread = threading.Thread(
@@ -64,40 +73,20 @@ class LogViewer(app):
         self.backend_thread.start()
 
 
-    @staticmethod
-    def esc(text):
-        return html.escape(text)\
-            .replace("\r\n", "\n")\
-            .replace("\r", "\n")\
-            .replace("\n", "<br>")
-
-    def clear_console(self):
-        self.logtext = ""
-        self.data_updated = True
-
-    def trim_scrollback(self):
-        if len(self.logtext) > self.config.max_scrollback:
-            self.logtext = self.logtext[-self.config.max_scrollback:]
-            self.logtext = self.logtext.split('<br>', 1)[-1]
-
     def status_message(self, text):
-        self.logtext += f"<font color='#0077FF'><b>{self.esc(text)}</b></font><br>"
-        self.trim_scrollback()
+        self.terminal_view.write(text, colour='cyan')
         self.data_updated = True
 
     def error_message(self, text):
-        self.logtext += f"<font color='#FF0000'><b>{self.esc(text)}</b></font><br>"
-        self.trim_scrollback()
+        self.terminal_view.write(text, colour='red')
         self.data_updated = True
 
     def console_message(self, text):
-        self.logtext += self.esc(text)
-        self.trim_scrollback()
+        self.terminal_view.write(text, colour='white')
         self.data_updated = True
 
     def console_message_onceonly(self, text):
-        self.logtext += f"<font color='#FFFFFF'>{self.esc(text)}</font>"
-        self.trim_scrollback()
+        self.terminal_view.write(text, colour='brightwhite')
         self.data_updated = True
 
     @crash_handler.monitor_thread
@@ -142,9 +131,9 @@ class LogViewer(app):
                             self.console_message_onceonly(out_text) if onceonly else self.console_message(out_text)
 
                     exit_status = stdout.channel.recv_exit_status()
-                    msg = f"\nCommand exited with status {exit_status}"
+                    msg = f"\nCommand exited with status {exit_status}\n"
                     if not onceonly:
-                        msg += f", retrying in {self.config.retry_seconds}s"
+                        msg += f"Retrying in {self.config.retry_seconds}s\n"
                     if exit_status == 0:
                         self.status_message(msg)
                     else:
@@ -153,11 +142,11 @@ class LogViewer(app):
                     if onceonly:
                         return
             except OSError as e:
-                self.error_message(f"\nConnection error: {str(e)}, "
-                    + f"retrying in {self.config.retry_seconds}s" if onceonly else '')
+                self.error_message(f"\nConnection error: {str(e)}\n"
+                    + f"retrying in {self.config.retry_seconds}s\n" if onceonly else '')
             except paramiko.SSHException as e:
-                self.error_message(f"\nSSH error: {str(e)}, "
-                    + f"retrying in {self.config.retry_seconds}s" if onceonly else '')
+                self.error_message(f"\nSSH error: {str(e)}\n"
+                    + f"retrying in {self.config.retry_seconds}s\n" if onceonly else '')
 
             if onceonly:
                 return
@@ -165,35 +154,23 @@ class LogViewer(app):
 
     def update(self, dt):
         if super().update(dt):
-            sb = self.log_view.scroll_bar
-            scrollAtBottom = (
-                sb is None or sb.scroll_position == \
-                        sb.bottom_limit - int(sb.scrollable_height * sb.visible_percentage)
-            )
-            scroll_position = 0 if sb is None else sb.scroll_position
-
-            self.log_view.html_text = self.logtext
-            self.log_view.rebuild()
-
-            if self.log_view.scroll_bar:
-                if scrollAtBottom:
-                    self.log_view.scroll_bar.scroll_position = self.log_view.scroll_bar.bottom_limit
-                else:
-                    # FIXME: this isn't quite right
-                    self.log_view.scroll_bar.scroll_position = scroll_position - 1
-                self.log_view.scroll_bar.bottom_button.held = True
-                self.log_view.scroll_bar.update(0)
-                self.log_view.scroll_bar.bottom_button.held = False
-                self.log_view.update(dt)
             self.gui.update(dt)
 
+    def draw(self, screen):
+        if self.had_event or self._had_update:
+            self.had_event = False
+            self._had_update = False
+            self.terminal_view.draw(screen)
+            self.gui.draw_ui(screen)
+            return True
+        return False
 
     def process_events(self, e):
         super().process_events(e)
         if e.type == pygame.USEREVENT and e.user_type == pygame_gui.UI_BUTTON_PRESSED:
             if e.ui_element in self.command_buttons.values():
                 command = self.config.commands[e.ui_element.text]
-                self.status_message(f">>> {command}")
+                self.status_message(f"\n---\n>>> {command}\n")
                 th = threading.Thread(
                     target=self.run_command_thread,
                     args=[command],
