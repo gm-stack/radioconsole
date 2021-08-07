@@ -32,7 +32,7 @@ class TerminalView():
         self.terminal_y = 0
 
         self.text_surf = surface.Surface((self.W, self.H))
-        self.text_surf.fill('#000000')
+        self.text_surf.fill((0, 0, 0))
 
         self.default_colour = 'white'
         self.current_colour = self.default_colour
@@ -78,7 +78,7 @@ class TerminalView():
             if self.terminal_y == self.terminal_h:
                 self.terminal_y -= 1
                 self.text_surf.scroll(0,-self.char_h)
-                self.text_surf.fill('#000000', rect=(0, (self.terminal_h - 1) * self.char_h, self.W, self.char_h))
+                self.text_surf.fill((0, 0, 0), rect=(0, (self.terminal_h - 1) * self.char_h, self.W, self.char_h))
 
     def draw(self, display):
         display.blit(self.text_surf, (self.X, self.Y), area=(0, 0, self.W, self.H))

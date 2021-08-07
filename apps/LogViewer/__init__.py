@@ -46,19 +46,6 @@ class LogViewer(app):
         buttons_h = (config.command_button_h + config.command_button_margin) * \
             int(math.ceil(len(config.commands) / config.command_buttons_x))
 
-        #self.logtext = ""
-
-        #self.log_view = pygame_gui.elements.UITextBox(
-        #    html_text='',
-        #    relative_rect=pygame.Rect(
-        #        0, cfg.display.TOP_BAR_SIZE,
-        #        cfg.display.DISPLAY_W,
-        #        cfg.display.DISPLAY_H - cfg.display.TOP_BAR_SIZE - \
-        #            buttons_h - config.command_button_margin
-        #    ),
-        #    manager=self.gui
-        #)
-
         self.terminal_view = TerminalView(
             x=0,
             y=cfg.display.TOP_BAR_SIZE,
