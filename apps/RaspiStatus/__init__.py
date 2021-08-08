@@ -8,6 +8,7 @@ import crash_handler
 from AppManager.app import app
 from config_reader import cfg
 from util import timegraph, stat_display, stat_label, stat_view, stat_view_graph, extract_number
+from .status_icon import raspi_status_icon
 
 class RaspiStatus(app):
     ui_element_labels = {}
@@ -73,12 +74,15 @@ class RaspiStatus(app):
         for host in self.config.hosts:
             create_ui(host['host'])
             self.data[host['host']] = {}
+            status_icon = raspi_status_icon()
+            self.status_icons.append(status_icon.surface)
             self.backend_thread = threading.Thread(
                 target=self.run_command,
-                args=[host],
+                args=[host, status_icon],
                 daemon=True
             )
             self.backend_thread.start()
+
 
     def parse_vc_throttle_status(self, status):
         if not status:
@@ -151,11 +155,11 @@ class RaspiStatus(app):
                 data['id'] = f"{data.get('hostname', '')}: {data.get('model', '')}" \
                     if not data.get('status') else data['status']
 
-                volts = extract_number(data.get('volts_core'))
-                freq = extract_number(data.get('clock_arm'))
-                if freq and volts:
-                    displayval = f"{freq/1000000.0:.0f}MHz/{float(volts):.2f}V"
-                    self.ui_element_graphs[host]['frequency'].update(freq, displayval)
+                if self.data[host].get('freqdisp'):
+                    self.ui_element_graphs[host]['frequency'].update(
+                        self.data[host].get('volts'),
+                        self.data[host].get('freqdisp')
+                    )
 
                 self.ui_element_graphs[host]['cpu_temp'].update(extract_number(data.get('temp')))
 
@@ -198,7 +202,7 @@ class RaspiStatus(app):
         return False
 
     @crash_handler.monitor_thread_exception
-    def run_command(self, host):
+    def run_command(self, host, status_icon):
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
@@ -242,8 +246,18 @@ class RaspiStatus(app):
 
                     self.data[host['host']]['status'] = ''
 
+                    self.data[host['host']]['volts'] = extract_number(self.data[host['host']]['volts_core'])
+                    self.data[host['host']]['clock'] = extract_number(self.data[host['host']]['clock_arm'])
+                    if self.data[host['host']]['clock'] and self.data[host['host']]['volts']:
+                        self.data[host['host']]['freqdisp'] = f"{self.data[host['host']]['clock']/1000000.0:.0f}MHz/{float(self.data[host['host']]['volts']):.2f}V"
+                    else:
+                        self.data[host['host']]['freqdisp'] = ""
+
+                    self.data[host['host']]['temp_num'] = extract_number(self.data[host['host']]['temp'])
+
                     self.host_updated[host['host']] = True
                     self.data_updated = True
+                    status_icon.update(self.data[host['host']])
                     time.sleep(self.config.refresh_seconds)
 
             except OSError as e:
