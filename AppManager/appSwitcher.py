@@ -42,7 +42,7 @@ class appSwitcher(object):
                 self.gui.draw_ui(screen)
                 self.redraw = False
                 return True
-            return False
+            return False or tbdraw
         else:
             # TODO: return dirty rects?
             return self.running_apps[self.FRONTMOST_APP].draw(screen) or tbdraw

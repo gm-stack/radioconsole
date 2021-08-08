@@ -10,6 +10,7 @@ from config_reader import cfg
 from AppManager.app import app
 from .backends import backends
 from util import timegraph, stat_label, stat_display, stat_view, stat_view_graph, extract_number
+from .status_icon import lte_status_icon
 
 class lte_status(app):
     backend = None
@@ -25,9 +26,8 @@ class lte_status(app):
         self.backend = backends[config.backend](config)
         self.data = {}
 
-        self.status_icon = surface.Surface((48,48))
-        self.status_icon.fill((255,0,0))
-        self.status_icons = [self.status_icon]
+        self.status_icon = lte_status_icon()
+        self.status_icons = [self.status_icon.surface]
 
         self.backend_thread = threading.Thread(target=self.backend_loop, daemon=True)
         self.backend_thread.start()
@@ -86,7 +86,7 @@ class lte_status(app):
                     -20: (255, 165, 0, 255),
                     None: (255, 0, 0, 255)
                 }
-            }, 
+            },
             'rsrp': {
                 'unit': ' dBm',
                 'colourmap': {
@@ -95,7 +95,7 @@ class lte_status(app):
                     -100: (255, 165, 0, 255),
                     None: (255, 0, 0, 255)
                 }
-            }, 
+            },
             'rssi': {
                 'unit': ' dBm',
                 'colourmap': {
@@ -104,7 +104,7 @@ class lte_status(app):
                     -85: (255, 165, 0, 255),
                     None: (255, 0, 0, 255)
                 }
-            }, 
+            },
             'temp': {
                 'unit': "\N{DEGREE SIGN}C",
                 'colourmap': {
@@ -112,7 +112,7 @@ class lte_status(app):
                     80: (255, 0, 0, 255),
                     None: (0, 255, 0, 255)
                 }
-            }, 
+            },
             'netmode': {'unit': ''}
         }.items():
             self.ui_element_graphs[ui_element] = stat_view_graph(
@@ -133,13 +133,15 @@ class lte_status(app):
             except requests.exceptions.RequestException as e:
                 self.data = {'mode': e.args[0].reason.args[0].split(':')[-1]}
             self.data_updated = True
+            self.status_icon.update(self.data)
+            self.status_icons_updated = True
             time.sleep(1.0)
 
     def update(self, dt):
         if self.data_updated:
             for key in ['mode', 'modem', 'lac']:
                 self.ui_element_values[key].set_text(self.data.get(key, ''))
-            
+
             for key in ['rsrq', 'rsrp', 'rssi', 'temp']:
                 value = extract_number(self.data.get(key))
                 self.ui_element_graphs[key].update(value)
@@ -147,7 +149,7 @@ class lte_status(app):
             if 'bands' in self.data:
                 for key, gui in self.band_values[0].items():
                     gui.set_text(self.data['bands'][0][key])
-                
+
                 if len(self.data['bands']) == 2:
                     for key, gui in self.band_values[1].items():
                         gui.set_text(self.data['bands'][1][key])
