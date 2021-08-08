@@ -3,6 +3,7 @@ import time
 
 import requests
 import pygame
+from pygame import surface
 
 import crash_handler
 from config_reader import cfg
@@ -23,6 +24,10 @@ class lte_status(app):
         super().__init__(bounds, config, display)
         self.backend = backends[config.backend](config)
         self.data = {}
+
+        self.status_icon = surface.Surface((48,48))
+        self.status_icon.fill((255,0,0))
+        self.status_icons = [self.status_icon]
 
         self.backend_thread = threading.Thread(target=self.backend_loop, daemon=True)
         self.backend_thread.start()

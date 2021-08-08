@@ -27,10 +27,24 @@ class top_bar(object):
             text='to switcher',
             manager=self.gui
         )
+        self.status_icons = []
+
+    def set_status_icons(self, icons):
+        self.status_icons = icons
+        self.redraw = True
+
+    def draw_status_icons(self, screen):
+        xpos = cfg.display.DISPLAY_W
+        ypos = cfg.display.TOP_BAR_SIZE
+
+        for icon in self.status_icons:
+            icon_w = icon.get_width()
+            icon_h = icon.get_height()
+            xpos -= (icon_w + 2)
+            screen.blit(icon, (xpos, ypos - icon_h - 2))
 
     def updateAppLabel(self, appname):
         self.appname_label.set_text(appname)
-        #redraw = True
 
     def update(self, dt):
         self.gui.update(dt)
@@ -39,6 +53,7 @@ class top_bar(object):
         if self.redraw:
             pygame.draw.rect(screen, (64, 64, 64), self.bounds)
             self.gui.draw_ui(screen)
+            self.draw_status_icons(screen)
             self.redraw = False
             return True
         return False

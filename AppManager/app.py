@@ -16,6 +16,8 @@ class app(object):
         self.had_event = True
         self.data_updated = True
         self._had_update = True
+        self.status_icons_updated = True
+        self.status_icons = []
 
     def update(self, dt):
         self._had_update = self.data_updated
@@ -37,3 +39,7 @@ class app(object):
             self.gui.draw_ui(screen)
             return True
         return False
+
+    def get_status_icons(self):
+        self.status_icons_updated = False
+        return self.status_icons

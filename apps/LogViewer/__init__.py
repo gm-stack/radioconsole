@@ -144,11 +144,8 @@ class LogViewer(app):
             self.gui.update(dt)
 
     def draw(self, screen):
-        if self.had_event or self._had_update:
-            self.had_event = False
-            self._had_update = False
+        if super().draw(screen):
             self.terminal_view.draw(screen)
-            self.gui.draw_ui(screen)
             return True
         return False
 
