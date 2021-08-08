@@ -14,8 +14,8 @@ class gps_satview(object):
     def update_data(self, data):
         self.sky = data
 
-        self.surf.lock()
         self.surf.fill((0, 0, 0))
+        self.surf.lock()
         for i in range(1, 200, 45):
             pygame.gfxdraw.aacircle(self.surf, 200, 200, i, (0, 255, 0))
         for i in range(0, 359, 15):

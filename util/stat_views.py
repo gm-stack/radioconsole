@@ -78,7 +78,7 @@ class stat_view(object):
             self.value.rebuild()
 
 class stat_view_graph(object):
-    def __init__(self, relative_rect, text_w, name, manager, colourmap={}, colourmap_mode=None, unit='', min_value=None, max_value=None):
+    def __init__(self, relative_rect, text_w, name, manager, colourmap={}, colourmap_mode=None, unit='', min_value=None, max_value=None, label_s=None):
         rr = relative_rect
         stat_view_rect = pygame.Rect(rr.x, rr.y, text_w, rr.height)
         graph_rect = pygame.Rect(rr.x + text_w, rr.y, rr.width - text_w, rr.height)
@@ -90,7 +90,8 @@ class stat_view_graph(object):
             split='lr',
             colourmap=colourmap,
             colourmap_mode=colourmap_mode,
-            unit=unit
+            unit=unit,
+            label_s=label_s
         )
 
         self.graph = timegraph(
