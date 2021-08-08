@@ -17,7 +17,7 @@ class top_bar(object):
             cfg.theme_file
         )
         self.appname_label = pygame_gui.elements.UILabel(
-            relative_rect=pygame.Rect(132, 2, 256, cfg.display.TOP_BAR_SIZE-4),
+            relative_rect=pygame.Rect(132, 2, cfg.display.TOP_BAR_APP_LABEL_WIDTH, cfg.display.TOP_BAR_SIZE-4),
             text='switcher',
             manager=self.gui
         )
