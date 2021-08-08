@@ -9,6 +9,7 @@ from config_reader import cfg
 from AppManager.app import app
 from .gps_satview import gps_satview
 from util import timegraph, stat_display, stat_label, stat_view, stat_view_graph, extract_number
+from .status_icon import gps_status_icon
 
 class gps_status(app):
     gps_data = {}
@@ -22,6 +23,9 @@ class gps_status(app):
 
         self.backend_thread = threading.Thread(target=self.backend_loop, daemon=True)
         self.backend_thread.start()
+
+        self.status_icon = gps_status_icon()
+        self.status_icons = [self.status_icon.surface]
 
         self.gps_satview = gps_satview((400, 400))
 
@@ -148,6 +152,7 @@ class gps_status(app):
             }.get(tpv.get('mode'),'?')
             self.ui_element_values['mode_t'].set_text(gps_mode)
 
+            sats_text = ""
             if 'SKY' in self.gps_data:
                 skydata = self.gps_data['SKY'].get('satellites', [])
                 self.gps_satview.update_data(skydata)
@@ -161,11 +166,15 @@ class gps_status(app):
                             satval[lbl].set_text('')
                 numsats = len(skydata)
                 numused = len([i for i in skydata if i['used']])
-                self.ui_element_values['sats'].set_text(f"{numused}/{numsats}")
+                sats_text = f"{numused}/{numsats}"
+                self.ui_element_values['sats'].set_text(sats_text)
             else:
                 for i in range(10):
                     for lbl in ['PRN', 'el', 'az', 'ss', 'used']:
                         self.satellite_rows[i][lbl].set_text('')
                 self.ui_element_values['sats'].set_text('')
+
+            self.status_icon.update(mode=gps_mode, sats=sats_text)
+            self.status_icons_updated = True
 
         super().update(dt)
