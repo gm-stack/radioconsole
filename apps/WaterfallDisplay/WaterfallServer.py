@@ -19,6 +19,8 @@ port = cfg.waterfall_server.listen_port
 
 CURRENT_FREQ = 7100000
 
+fft_via_udp = False
+
 class FFTWaterfall(object):
     def __init__(self):
         self.config = cfg.waterfall_server
@@ -37,7 +39,8 @@ class FFTWaterfall(object):
         self.absmode = False
         self.abs_freq_low = 7000000
         self.abs_freq_high = 7300000
-        
+        self.rel_bandwidth = 1250000
+
         self.RF_MIN = 0
         self.RF_MAX = 127
 
@@ -86,34 +89,51 @@ class FFTWaterfall(object):
         return fft * 255
 
 def parse_cmd_buffer(cmd_buffer):
-    d = struct.unpack(
-        '!BBHIBBxxxxxxxxxxxxxx',
-        cmd_buffer
-    )
-    ver, msg, output_w, relbw, absmode, decimate_zoom = d
-    if ver != 0x00 or msg != 0x00:
+    global fft_via_udp
+    
+    d = struct.unpack('!BBxxxxxxxxxxxxxxxxxxxxxx', cmd_buffer)
+    ver, msg = d
+    if ver != 0x00:
         raise ValueError(f"invalid message: ver:{ver}, msg:{msg}")
+    
+    if msg == 0x00:
+        d = struct.unpack('!BBHIBBxxxxxxxxxxxxxx', cmd_buffer)
+        _, _, output_w, relbw, absmode, decimate_zoom = d
+    
+        fft.output_w = output_w
+        fft.rel_bandwidth = relbw
+        fft.absmode = bool(absmode)
+        fft.decimate_zoom = bool(decimate_zoom)
+    elif msg == 0x01:
+        d = struct.unpack('!BBHxxxxxxxxxxxxxxxxxxxx', cmd_buffer)
+        _, _, port = d
+        fft_via_udp = True
+        print("Switching to UDP mode")
     print(d)
     
-    fft.output_w = output_w
-    fft.rel_bandwidth = relbw
-    fft.absmode = bool(absmode)
-    fft.decimate_zoom = bool(decimate_zoom)
 
 def send_fft_line():
-    global CURRENT_FREQ
+    global CURRENT_FREQ, fft_via_udp
     CURRENT_FREQ = fft.rs.freq()
     header = struct.pack('!BBI', 0x00, 0x01, CURRENT_FREQ)
     fftd = fft.fft().astype('uint8').tobytes()
-    conn.sendall(header+fftd)
+    if fft_via_udp:
+        s = u.sendto(header+fftd, (addr[0], 45362))
+        if s != len(header+fftd):
+            print(f"udp send failed, only {s} bytes sent")
+    else:
+        conn.sendall(header+fftd)
 
 MAXRATE = 30
 sample_every = 1.0 / MAXRATE
 def handle_conn(conn, addr):
+    global fft_via_udp
     conn.setblocking(0)
     prev_sampletime = 0
     cmd_buffer = bytes()
     got_initial_config = False
+    fft_via_udp = False
+
     while True:
         try:
             if len(cmd_buffer) < 24:
@@ -127,7 +147,9 @@ def handle_conn(conn, addr):
                 cmd_buffer = bytes()
         except BlockingIOError:
             pass
-        
+        except ConnectionResetError:
+            return
+
         if got_initial_config:
             conn.setblocking(0)
             timesince = time.monotonic() - prev_sampletime
@@ -149,21 +171,22 @@ while True:
         fft.sample_rate = cfg.waterfall_server.sample_rate
         fft.retune(fft.tune, fft.sample_rate)
         break
-    except rtlsdr.rtlsdr.LibUSBError:
+    except rtlsdr.rtlsdr.LibUSBError as e:
+        print(e)
         time.sleep(5)
 
 print("rtlsdr started")
 
+with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as u:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        s.bind(('0.0.0.0', port))
+        s.listen(1)
+        print(f"Listening on {port}")
 
-with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    s.bind(('0.0.0.0', port))
-    s.listen(1)
-    print(f"Listening on {port}")
-
-    while True:
-        conn, addr = s.accept()
-        print(f"{addr} connected")
-        handle_conn(conn, addr)
-        print(f"{addr} disconnected")
-        conn.close()
+        while True:
+            conn, addr = s.accept()
+            print(f"{addr} connected")
+            handle_conn(conn, addr)
+            print(f"{addr} disconnected")
+            conn.close()
