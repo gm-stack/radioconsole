@@ -93,6 +93,8 @@ class appSwitcher(object):
 
     def switchFrontmostApp(self, appname):
         print(f"switching to {appname}")
+        if self.FRONTMOST_APP != 'switcher':
+            self.running_apps[self.FRONTMOST_APP].backgrounded()
         self.FRONTMOST_APP = appname
         self.top_bar.updateAppLabel(appname)
         self.screen.fill((0, 0, 0))
@@ -105,3 +107,5 @@ class appSwitcher(object):
             )
         else:
             self.running_apps[self.FRONTMOST_APP].had_event = True
+        if self.FRONTMOST_APP != 'switcher':
+            self.running_apps[self.FRONTMOST_APP].foregrounded()

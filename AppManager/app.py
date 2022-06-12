@@ -43,3 +43,9 @@ class app(object):
     def get_status_icons(self):
         self.status_icons_updated = False
         return self.status_icons
+    
+    def foregrounded(self):
+        pass
+    
+    def backgrounded(self):
+        pass

@@ -102,6 +102,9 @@ class WaterfallDisplay(app):
         self.WF_Y = self.Y + self.config.GRAPH_HEIGHT
         self.WF_H = self.H - self.config.GRAPH_HEIGHT - self.config.BUTTON_HEIGHT
 
+        self.connected = False
+        self.in_background = True
+
         self.waterfall_surf = surface.Surface((self.W, self.WF_H))
         self.graph_surf = surface.Surface((self.W, self.config.GRAPH_HEIGHT))
 
@@ -119,6 +122,9 @@ class WaterfallDisplay(app):
 
         self.backend_thread = threading.Thread(target=self.backend_loop, daemon=True)
         self.backend_thread.start()
+
+        self.udp_backend_thread = threading.Thread(target=self.udp_backend_loop, daemon=True)
+        self.udp_backend_thread.start()
 
     def update_status(self):
         if self.rel_bandwidth > 1000000:
@@ -242,48 +248,97 @@ class WaterfallDisplay(app):
         self.net_status = status
         self.net_status_updated = True
 
+    def send_loop(self):
+        s = self.socket
+        try:
+            while True:
+                if self.params_updated:
+                    self.params_updated = False
+                    print("updated params")
+                    d = struct.pack(
+                        '!BBHIBBxxxxxxxxxxxxxx', # 24 bytes
+                        0x00, # version
+                        0x00, # message (parameters)
+                        self.bounds.w,
+                        self.rel_bandwidth,
+                        self.absmode,
+                        self.decimate_zoom
+                    )
+                    s.sendall(d)
+                    d = struct.pack(
+                        '!BBHxxxxxxxxxxxxxxxxxxxx', # 24 bytes
+                        0x00, # version
+                        0x01, # message (switch to UDP) todo: make configurable
+                        45362
+                    )
+                    s.sendall(d)
+        except OSError as e:
+            self.connected = False
+            self.set_net_status(str(e))
+
     @crash_handler.monitor_thread
     def backend_loop(self):
         while True:
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                try:
-                    s.connect((self.config.HOST, self.config.PORT))
-                    self.set_net_status('Connected')
-                    self.params_updated = True
-                    while True:
-                        if self.params_updated:
-                            self.params_updated = False
-                            print("updated params")
-                            d = struct.pack(
-                                '!BBHIBBxxxxxxxxxxxxxx', # 24 bytes
-                                0x00, # version
-                                0x00, # message (parameters)
-                                self.bounds.w,
-                                self.rel_bandwidth,
-                                self.absmode,
-                                self.decimate_zoom
-                            )
-                            s.sendall(d)
+            if not self.in_background:
+                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                    try:
+                        s.connect((self.config.HOST, self.config.PORT))
+                        self.set_net_status('Connected')
+                        self.connected = True
+                        self.params_updated = True
+                        self.socket = s
 
-                        # todo: parse header
-                        frame_size = self.bounds.w + 6
-                        data = bytes()
-                        while len(data) < frame_size:
-                            rcvd = s.recv(frame_size-len(data))
-                            if not rcvd:
-                                self.set_net_status('Reconnecting...')
-                                raise OSError("Disconnected")
-                            data += rcvd
-                        d = struct.unpack("!BBI", data[:6])
-                        ver, msg, freq = d
-                        if msg == 0x01:
-                            self.current_freq = freq
-                            self.fft_queue.put_nowait(data[6:])
+                        self.send_thread = threading.Thread(target=self.send_loop, daemon=True)
+                        self.send_thread.start()
 
+                        while self.connected:
+                            # todo: parse header
+                            frame_size = self.bounds.w + 6
+                            data = bytes()
+                            while len(data) < frame_size:
+                                rcvd = s.recv(frame_size-len(data))
+                                if not rcvd:
+                                    self.set_net_status('Reconnecting...')
+                                    raise OSError("Disconnected")
+                                data += rcvd
+                            d = struct.unpack("!BBI", data[:6])
+                            ver, msg, freq = d
+                            if msg == 0x01:
+                                self.current_freq = freq
+                                self.fft_queue.put_nowait(data[6:])
+                            
+                            if self.in_background:
+                                s.close()
+                                self.set_net_status('Disconnected')
+                                break
 
-                except OSError as e:
-                    self.set_net_status(str(e))
+                    except OSError as e:
+                        self.connected = False
+                        self.set_net_status(str(e))
             time.sleep(1)
+    
+    @crash_handler.monitor_thread
+    def udp_backend_loop(self):
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as u:
+            u.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            u.bind(('0.0.0.0', 45362))
+            while True:
+                #if addr == # ?
+                frame_size = self.bounds.w + 6
+                data = bytes()
+                while len(data) < frame_size:
+                    rcvd, addr = u.recvfrom(frame_size-len(data))
+                    if not rcvd:
+                        continue
+                    data += rcvd
+                d = struct.unpack("!BBI", data[:6])
+                ver, msg, freq = d
+                if msg == 0x01:
+                    self.current_freq = freq
+                    self.fft_queue.put_nowait(data[6:])
+                    udp_status = "Connected (+udp)"
+                    if self.net_status != udp_status:
+                        self.set_net_status(udp_status)
 
 
     def update(self, dt):
@@ -309,6 +364,9 @@ class WaterfallDisplay(app):
 
         self.gui.draw_ui(screen)
 
+        if not self.connected:
+            return True
+
         if self.absmode:
             if self.current_freq is not None:
                 self.draw_marker(self.current_freq, screen, highlight=True)
@@ -322,3 +380,11 @@ class WaterfallDisplay(app):
             #    self.draw_marker(config.CURRENT_FREQ + m, screen, relative=True)
             #    self.draw_marker(config.CURRENT_FREQ - m, screen, relative=True)
         return True
+
+    def backgrounded(self):
+        self.in_background = True
+
+    def foregrounded(self):
+        self.in_background = False
+
+    
