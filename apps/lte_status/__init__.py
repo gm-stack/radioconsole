@@ -131,7 +131,9 @@ class lte_status(app):
             try:
                 self.data = self.backend.fetch_stats()
             except requests.exceptions.RequestException as e:
-                self.data = {'mode': e.args[0].reason.args[0].split(':')[-1]}
+                errargs = e.args[0].reason.args
+                err = errargs[0] if type(errargs[0]) is str else errargs[1]
+                self.data = {'mode': err.split(':')[-1]}
             self.data_updated = True
             self.status_icon.update(self.data)
             self.status_icons_updated = True
