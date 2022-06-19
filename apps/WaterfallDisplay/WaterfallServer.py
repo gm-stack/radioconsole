@@ -12,6 +12,8 @@ import time
 import struct
 import rtlsdr
 
+import bands
+
 sys.path.append('../..')
 from config_reader import cfg
 
@@ -107,8 +109,12 @@ def parse_cmd_buffer(cmd_buffer):
     elif msg == 0x01:
         d = struct.unpack('!BBHxxxxxxxxxxxxxxxxxxxx', cmd_buffer)
         _, _, port = d
-        fft_via_udp = True
-        print("Switching to UDP mode")
+        if port != 0:
+            fft_via_udp = True
+            print("Switching to UDP mode")
+        else:
+            fft_via_udp = False
+            print("Stopping UDP mode")
     print(d)
     
 
