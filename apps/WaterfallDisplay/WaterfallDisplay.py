@@ -17,6 +17,8 @@ from config_reader import cfg
 
 from . import turbo_colormap
 
+from util import stat_display
+
 class WaterfallDisplay(app):
     REL_BANDWIDTHS = {
         1200000: range(100000, 600001, 100000),
@@ -79,7 +81,7 @@ class WaterfallDisplay(app):
             # preserve text when disabled as FFT Zoom
             self.button_zoommode.set_text("Decimate Zoom")
 
-        self.label_status = pygame_gui.elements.UILabel(
+        self.label_status = stat_display(
             relative_rect=pygame.Rect(
                 256 + 1, BUTTON_Y + 1,
                 cfg.display.DISPLAY_W - 512 - 2, self.config.BUTTON_HEIGHT/2 - 2
@@ -88,7 +90,7 @@ class WaterfallDisplay(app):
             manager=self.gui
         )
 
-        self.label_net_status = pygame_gui.elements.UILabel(
+        self.label_net_status = stat_display(
             relative_rect=pygame.Rect(
                 256 + 1, BUTTON_Y + 1 + self.config.BUTTON_HEIGHT/2,
                 cfg.display.DISPLAY_W - 512 - 2, self.config.BUTTON_HEIGHT/2 - 2

@@ -5,6 +5,7 @@ signal.signal(signal.SIGHUP, lambda s, f: None)
 import sys
 
 import pygame
+import pygame.freetype
 
 from config_reader import cfg
 
@@ -17,6 +18,7 @@ ts = pygame_ft5406.ft5406Events()
 
 pygame.display.init()
 ts.start()
+pygame.freetype.init()
 pygame.font.init()
 screen = pygame.display.set_mode(cfg.display.size)
 
