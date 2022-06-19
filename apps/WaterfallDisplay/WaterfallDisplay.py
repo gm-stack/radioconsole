@@ -3,6 +3,7 @@ import threading
 import queue
 import struct
 import time
+import select
 
 import pygame
 from pygame import surface
@@ -36,8 +37,6 @@ class WaterfallDisplay(app):
 
         self.net_status = ""
         self.net_status_updated = True
-
-        self.params_updated = True
 
         self.decimate_zoom = True
 
@@ -140,13 +139,11 @@ class WaterfallDisplay(app):
                 self.rel_bandwidth_index += 1
                 rel_bw_list = list(self.REL_BANDWIDTHS.keys())
                 self.rel_bandwidth = rel_bw_list[self.rel_bandwidth_index % len(self.REL_BANDWIDTHS)]
-                self.params_updated = True
                 self.update_status()
             elif e.ui_element == self.button_zoom_out:
                 self.rel_bandwidth_index -= 1
                 rel_bw_list = list(self.REL_BANDWIDTHS.keys())
                 self.rel_bandwidth = rel_bw_list[self.rel_bandwidth_index % len(self.REL_BANDWIDTHS)]
-                self.params_updated = True
                 self.update_status()
             elif e.ui_element == self.button_absmode:
                 self.absmode = not self.absmode
@@ -160,13 +157,12 @@ class WaterfallDisplay(app):
                     self.button_zoom_in.enable()
                     self.button_zoom_out.enable()
                     self.button_zoommode.enable()
-                self.params_updated = True
             elif e.ui_element == self.button_zoommode:
                 self.decimate_zoom = not self.decimate_zoom
                 self.button_zoommode.set_text(
                     "Decimate Zoom" if self.decimate_zoom else "FFT Zoom"
                 )
-                self.params_updated = True
+            self.send_params()
 
     def draw_wf(self, ffts, screen):
         self.waterfall_surf.lock()
@@ -187,6 +183,8 @@ class WaterfallDisplay(app):
         centre_pixel = self.bounds.w / 2
         hz_per_pixel = (self.display_bandwidth) / float(self.bounds.w)
 
+        if freq is None or centre_freq is None:
+            return centre_pixel
         return centre_pixel + int((freq - centre_freq) / hz_per_pixel)
 
     def draw_marker(self, freq, screen, highlight=False, relative=False):
@@ -196,8 +194,12 @@ class WaterfallDisplay(app):
         text_colour = (255, 0, 0) if highlight else (0, 255, 255)
         line_colour = (255, 0, 0) if highlight else (0, 128, 0)
 
-        label = f"{int(freq/1000)}" if not relative \
-            else f"{(freq-self.current_freq)/1000:+.1f}k".replace(".0", "")
+        if relative and freq is not None and self.current_freq is not None:
+            label = f"{(freq-self.current_freq)/1000:+.1f}k".replace(".0", "")
+        elif relative:
+            label = ""
+        else:
+            label = f"{int(freq/1000)}"
 
         text = font.render(label, True, text_colour)
         text_w = text.get_width()
@@ -248,31 +250,27 @@ class WaterfallDisplay(app):
         self.net_status = status
         self.net_status_updated = True
 
-    def send_loop(self):
-        s = self.socket
+    def send_params(self):
+        self.socket.settimeout(5.0)
         try:
-            while True:
-                if self.params_updated:
-                    self.params_updated = False
-                    print("updated params")
-                    d = struct.pack(
-                        '!BBHIBBxxxxxxxxxxxxxx', # 24 bytes
-                        0x00, # version
-                        0x00, # message (parameters)
-                        self.bounds.w,
-                        self.rel_bandwidth,
-                        self.absmode,
-                        self.decimate_zoom
-                    )
-                    s.sendall(d)
-                    d = struct.pack(
-                        '!BBHxxxxxxxxxxxxxxxxxxxx', # 24 bytes
-                        0x00, # version
-                        0x01, # message (switch to UDP) todo: make configurable
-                        45362
-                    )
-                    s.sendall(d)
-        except OSError as e:
+            d = struct.pack(
+                '!BBHIBBxxxxxxxxxxxxxx', # 24 bytes
+                0x00, # version
+                0x00, # message (parameters)
+                self.bounds.w,
+                self.rel_bandwidth,
+                self.absmode,
+                self.decimate_zoom
+            )
+            self.socket.sendall(d)
+            d = struct.pack(
+                '!BBHxxxxxxxxxxxxxxxxxxxx', # 24 bytes
+                0x00, # version
+                0x01, # message (switch to UDP) todo: make configurable
+                45362 # port
+            )
+            self.socket.sendall(d)
+        except (socket.timeout, OSError) as e:
             self.connected = False
             self.set_net_status(str(e))
 
@@ -280,41 +278,57 @@ class WaterfallDisplay(app):
     def backend_loop(self):
         while True:
             if not self.in_background:
-                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                    try:
-                        s.connect((self.config.HOST, self.config.PORT))
-                        self.set_net_status('Connected')
-                        self.connected = True
-                        self.params_updated = True
-                        self.socket = s
+                try:
+                    print("Connecting")
+                    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    s.connect((self.config.HOST, self.config.PORT))
+                    self.set_net_status('Connected')
+                    self.connected = True
+                    self.socket = s
+                    self.send_params()
+                    s.setblocking(0)
 
-                        self.send_thread = threading.Thread(target=self.send_loop, daemon=True)
-                        self.send_thread.start()
-
-                        while self.connected:
-                            # todo: parse header
-                            frame_size = self.bounds.w + 6
-                            data = bytes()
-                            while len(data) < frame_size:
-                                rcvd = s.recv(frame_size-len(data))
-                                if not rcvd:
-                                    self.set_net_status('Reconnecting...')
-                                    raise OSError("Disconnected")
-                                data += rcvd
-                            d = struct.unpack("!BBI", data[:6])
-                            ver, msg, freq = d
-                            if msg == 0x01:
-                                self.current_freq = freq
-                                self.fft_queue.put_nowait(data[6:])
+                    while self.connected:
+                        # todo: parse header
+                        frame_size = self.bounds.w + 6
+                        data = bytes()
+                        while len(data) < frame_size:
+                            try:
+                                r = select.select([s],[],[], 1)
+                                if r[0]:
+                                    rcvd = s.recv(frame_size-len(data))
+                                    data += rcvd
+                            except select.error:
+                                self.set_net_status('Reconnecting...')
+                                raise OSError("Disconnected")
                             
                             if self.in_background:
+                                print("disconnecting")
+                                d = struct.pack(
+                                    '!BBHxxxxxxxxxxxxxxxxxxxx', # 24 bytes
+                                    0x00, # version
+                                    0x01, # message (switch to UDP) todo: make configurable
+                                    0 # disable UDP send
+                                )
+                                s.sendall(d)
                                 s.close()
                                 self.set_net_status('Disconnected')
+                                self.connected = False
                                 break
 
-                    except OSError as e:
-                        self.connected = False
-                        self.set_net_status(str(e))
+                        if not self.connected:
+                            break
+                        
+                        d = struct.unpack("!BBI", data[:6])
+                        ver, msg, freq = d
+                        if msg == 0x01:
+                            self.current_freq = freq
+                            self.fft_queue.put_nowait(data[6:])
+
+                except OSError as e:
+                    self.connected = False
+                    print(str(e))
+                    self.set_net_status(str(e))
             time.sleep(1)
     
     @crash_handler.monitor_thread
