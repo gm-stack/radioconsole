@@ -299,6 +299,8 @@ class WaterfallDisplay(app):
                                 r = select.select([s],[],[], 1)
                                 if r[0]:
                                     rcvd = s.recv(frame_size-len(data))
+                                    if not rcvd:
+                                        raise select.error()
                                     data += rcvd
                             except select.error:
                                 self.set_net_status('Reconnecting...')
