@@ -138,3 +138,6 @@ dmypy.json
 
 # Cython debug symbols
 cython_debug/
+
+# config (that may include passwords)
+config.yaml
