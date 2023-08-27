@@ -64,13 +64,15 @@ modules:
         port: 22
 ```
 
-More than one host is supported:
+More than one host is supported (and they're much happier than the Pi above):
 
 ![raspi status](doc/status_2_hosts.png)
 
 ## LTE Status
 
 ![lte status](doc/lte_status.png)
+
+In this screenshot you can see signal strength increasing, then starting to decrease as we drive through the town of Ararat.
 
 This module will query modem connection statistics from a router running ROOTer. This module will work best if you have a Sierra Wireless modem attached but it should still work with other brands - I haven't tested.
 
@@ -98,6 +100,8 @@ modules:
       username: root
       password: hunter2
 ```
+
+There is also a button in the top right to reboot the entire ROOTer box - this uses the web interface "reboot system" page to achieve this. Useful in case of prolonged misbehaviour.
 
 ## Log Viewer
 
@@ -299,4 +303,12 @@ theme:
       name: "fira_code"
       size: 14
       bold: 1
+  '#param_value':
+    colours:
+      normal_text: "#bbbbbb"
+      dark_bg: "#21282d"
+    font:
+      name: "fira_code"
+      size: 14
+      bold: 0
 ```
