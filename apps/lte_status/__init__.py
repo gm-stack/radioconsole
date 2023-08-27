@@ -4,6 +4,7 @@ import time
 import requests
 import pygame
 from pygame import surface
+import pygame_gui
 
 import crash_handler
 from config_reader import cfg
@@ -33,6 +34,12 @@ class lte_status(app):
         self.backend_thread.start()
 
         y = display.TOP_BAR_SIZE
+
+        self.button_reboot = pygame_gui.elements.UIButton(
+            relative_rect=pygame.Rect(display.DISPLAY_W - 256, y, 256, 64),
+            text="Reboot Modem",
+            manager=self.gui
+        )
 
         for ui_element in ['mode', 'modem', 'lac']:
             self.ui_element_values[ui_element] = stat_view(
@@ -131,9 +138,12 @@ class lte_status(app):
             try:
                 self.data = self.backend.fetch_stats()
             except requests.exceptions.RequestException as e:
-                errargs = e.args[0].reason.args
-                err = errargs[0] if type(errargs[0]) is str else errargs[1]
-                self.data = {'mode': err.split(':')[-1]}
+                try:
+                    errargs = e.args[0].reason.args
+                    err = errargs[0] if type(errargs[0]) is str else errargs[1]
+                    self.data = {'mode': err.split(':')[-1]}
+                except:
+                    self.data = {'mode': str(e)}
             self.data_updated = True
             self.status_icon.update(self.data)
             self.status_icons_updated = True
@@ -167,3 +177,8 @@ class lte_status(app):
                 graph.draw(screen)
             return True
         return False
+
+    def process_events(self, e):
+        super().process_events(e)
+        if e.type == pygame.USEREVENT and e.user_type == pygame_gui.UI_BUTTON_PRESSED:
+            self.backend.reboot_modem()

@@ -21,11 +21,13 @@ class gps_status(app):
     def __init__(self, bounds, config, display):
         super().__init__(bounds, config, display)
 
-        self.backend_thread = threading.Thread(target=self.backend_loop, daemon=True)
-        self.backend_thread.start()
-
         self.status_icon = gps_status_icon()
         self.status_icons = [self.status_icon.surface]
+        self.status_icon.update(mode='-',sats='0/0')
+        self.status_icons_updated = True
+
+        self.backend_thread = threading.Thread(target=self.backend_loop, daemon=True)
+        self.backend_thread.start()
 
         self.gps_satview = gps_satview((400, 400))
 
@@ -132,6 +134,13 @@ class gps_status(app):
                     self.status_icons_updated = True
             except OSError as e:
                 self.gps_data = {'status': f'Connection error: {str(e)}'}
+                self.status_icon.update(mode='-',sats='0/0')
+                self.status_icons_updated = True
+                self.data_updated = True
+            except StopIteration:
+                self.gps_data = {'status': f'Disconnected'}
+                self.status_icon.update(mode='-',sats='0/0')
+                self.status_icons_updated = True
                 self.data_updated = True
             time.sleep(5)
 

@@ -17,3 +17,6 @@ class TestBackend(object):
     def fetch_stats(self):
         response = random.choice(self.responses)
         return rooter_webif.RooterBackend.parse(response)
+    
+    def reboot_modem(self):
+        print("reboot requested")

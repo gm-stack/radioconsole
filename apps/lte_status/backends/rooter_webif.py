@@ -1,15 +1,17 @@
 import json
 import requests
+import re
 
 from .. import channel_info
 
 class RooterBackend(object):
+    TOKEN_REGEX = re.compile('token: \'(.*)\'')
+
     sysauth = None
     def __init__(self, cfg):
         self.config = cfg
 
     def login(self):
-        print("logging in")
         r = requests.post(
             f"http://{self.config.host}/cgi-bin/luci",
             data={
@@ -43,6 +45,26 @@ class RooterBackend(object):
         else:
             return {'mode': 'Login failed, retrying...'}
             self.login()
+    
+    def reboot_modem(self):
+        if not self.sysauth:
+            self.login()
+        else:
+            r = requests.get(
+                f'http://{self.config.host}/cgi-bin/luci/admin/system/reboot',
+                cookies={'sysauth': self.sysauth},
+                timeout=5
+            )
+            token = self.TOKEN_REGEX.search(r.text).groups()[0]
+            
+            r = requests.post(
+                f'http://{self.config.host}/cgi-bin/luci/admin/system/reboot/call',
+                cookies={'sysauth': self.sysauth},
+                data={'token': token},
+                timeout=5
+            )
+            if r.status_code != 200:
+                print(r.text)
 
     @classmethod
     def parse_band(cls, band):

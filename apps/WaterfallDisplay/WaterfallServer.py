@@ -46,6 +46,9 @@ class FFTWaterfall(object):
         self.RF_MIN = 0
         self.RF_MAX = 127
 
+    def abs_frequency_band_edges(self):
+        pass
+
     def retune(self, if_freq, sample_rate):
         self.rf.retune(if_freq, sample_rate)
         self.sample_rate = sample_rate

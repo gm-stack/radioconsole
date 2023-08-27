@@ -12,12 +12,13 @@ class appManager(object):
         print(f"Registered {name}: {appclass}")
         self.available_apps[name] = appclass
 
-    def instantiate_apps(self):
+    def instantiate_apps(self, status_cb):
         for appname, appcfg in cfg.modules.items():
             if appcfg.type not in self.available_apps:
                 raise NotImplementedError(
                     f"Error starting app {appname}: {appcfg.type} not a recognised app"
                 )
+            status_cb(f"init {appname}")
             app = self.available_apps[appcfg.type](
                 bounds=pygame.Rect(
                     0,

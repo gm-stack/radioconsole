@@ -12,7 +12,7 @@ class appSwitcher(object):
     screen = None
     logo = None
     logo_size = None
-    redraw = True
+    redraw = False
     status_icons_collection = []
 
     def __init__(self, screen):
@@ -21,7 +21,7 @@ class appSwitcher(object):
         self.screen = screen
         self.logo = pygame.image.load("logo.png")
         self.logo_size = self.logo.get_size()
-        self.switchFrontmostApp('switcher')
+        self.switchFrontmostApp('switcher', False)
 
     def process_events(self, e):
         self.top_bar.process_events(e)
@@ -91,21 +91,22 @@ class appSwitcher(object):
         self.running_apps[appname] = app
         self.createAppButton(appname)
 
-    def switchFrontmostApp(self, appname):
+    def switchFrontmostApp(self, appname, redraw=True):
         print(f"switching to {appname}")
         if self.FRONTMOST_APP != 'switcher':
             self.running_apps[self.FRONTMOST_APP].backgrounded()
         self.FRONTMOST_APP = appname
         self.top_bar.updateAppLabel(appname)
-        self.screen.fill((0, 0, 0))
-        if appname == 'switcher':
-            self.redraw = True
-            self.screen.blit(
-                self.logo,
-                (cfg.display.DISPLAY_W - self.logo_size[0],
-                 cfg.display.DISPLAY_H - self.logo_size[1])
-            )
-        else:
-            self.running_apps[self.FRONTMOST_APP].had_event = True
-        if self.FRONTMOST_APP != 'switcher':
-            self.running_apps[self.FRONTMOST_APP].foregrounded()
+        if redraw:
+            self.screen.fill((0, 0, 0))
+            if appname == 'switcher':
+                self.redraw = True
+                self.screen.blit(
+                    self.logo,
+                    (cfg.display.DISPLAY_W - self.logo_size[0],
+                    cfg.display.DISPLAY_H - self.logo_size[1])
+                )
+            else:
+                self.running_apps[self.FRONTMOST_APP].had_event = True
+            if self.FRONTMOST_APP != 'switcher':
+                self.running_apps[self.FRONTMOST_APP].foregrounded()

@@ -12,6 +12,9 @@ class raspi_status_icon():
     def update(self, data):
         self.surface.fill(self.bgcolour)
 
+        if data.get('status') != '':
+            return
+
         host_text = self.font.render(data.get('hostname', ''), True, (255,255,255))
         self.surface.blit(host_text, (0, 0))
 

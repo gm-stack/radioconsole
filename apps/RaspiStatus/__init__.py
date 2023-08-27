@@ -262,11 +262,13 @@ class RaspiStatus(app):
 
             except OSError as e:
                 self.data[host['host']]['status'] = f"Connection error: {str(e)}"
+                status_icon.update(self.data[host['host']])
                 self.host_updated[host['host']] = True
                 self.data_updated = True
 
             except paramiko.SSHException as e:
                 self.data[host['host']]['status'] = f"SSH error: {str(e)}"
+                status_icon.update(self.data[host['host']])
                 self.host_updated[host['host']] = True
                 self.data_updated = True
 

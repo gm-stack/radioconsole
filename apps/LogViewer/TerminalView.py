@@ -2,6 +2,8 @@ import pygame
 from pygame import surface
 import pygame_gui
 
+FONT_CACHE=None
+
 class TerminalView():
     COLOURS = {
         'black': (0, 0, 0),
@@ -51,12 +53,19 @@ class TerminalView():
         return {cname : self.render_char(char, cval) for cname, cval in self.COLOURS.items()}
 
     def precache_font(self):
-        charlist = [chr(x) for x in range(32,128)]
-        self.precache_list = {x : self.render_char_colours(x) for x in charlist}
+        global FONT_CACHE
+        if not FONT_CACHE:
+            print("precaching font")
+            charlist = [chr(x) for x in range(32,128)]
+            self.precache_list = {x : self.render_char_colours(x) for x in charlist}
 
+            self.char_w = max([x[self.default_colour].get_width() for x in self.precache_list.values()])
+            self.char_h = max([x[self.default_colour].get_height() for x in self.precache_list.values()])
+            FONT_CACHE = (self.precache_list, self.char_w, self.char_h)
+        else:
+            print("using cached font")
+            self.precache_list, self.char_w, self.char_h = FONT_CACHE
 
-        self.char_w = max([x[self.default_colour].get_width() for x in self.precache_list.values()])
-        self.char_h = max([x[self.default_colour].get_height() for x in self.precache_list.values()])
 
     def write(self, text, colour=None):
         def newline():

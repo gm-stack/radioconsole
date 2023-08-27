@@ -90,7 +90,7 @@ class LogViewer(app):
 
         while True:
             try:
-                self.status_message(f"ssh {self.config.username}@{self.config.host}:{self.config.port}")
+                self.status_message(f"ssh {self.config.username}@{self.config.host}:{self.config.port}\n")
                 ssh.connect(
                     self.config.host,
                     username=self.config.username,

@@ -8,9 +8,11 @@ class civ(object):
     last_freq = 0
     backend_thread = None
 
-    def __init__(self, config):
-        self.s = serial.Serial('/dev/ttyUSB0', 19200)
+    def __init__(self, config, callback):
+        self.s = serial.Serial('/dev/icomA', 19200)
         self.s.write(b"\xFE\xFE\x88\x00\x03\xFD")
+
+        self.callback = callback
 
         self.backend_thread = threading.Thread(target=self.backend_loop, daemon=True)
         self.backend_thread.start()
@@ -39,6 +41,7 @@ class civ(object):
         
         if cmd == 0x00 or cmd == 0x03: # frequency
             self.last_freq = int("".join([bcd(b) for b in data[::-1]]))
+            self.callback({'freq': self.last_freq})
         else:
             print(f"CI-V: unknown command 0x{cmd:x}")
 
