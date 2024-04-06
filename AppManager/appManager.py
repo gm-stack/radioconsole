@@ -27,6 +27,7 @@ class appManager(object):
                     cfg.display.DISPLAY_H - cfg.display.TOP_BAR_SIZE
                 ),
                 config=appcfg.config,
-                display=cfg.display
+                display=cfg.display,
+                name=appname
             )
             self.switcher.app_launched(appname, app)

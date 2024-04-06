@@ -1,5 +1,6 @@
 import pygame
 import pygame_gui
+import fonts
 from config_reader import cfg
 from .top_bar import top_bar
 
@@ -17,6 +18,7 @@ class appSwitcher(object):
 
     def __init__(self, screen):
         self.gui = pygame_gui.UIManager(cfg.display.size, cfg.theme_file)
+        fonts.load_fonts(self.gui)
         self.top_bar = top_bar(self)
         self.screen = screen
         self.logo = pygame.image.load("logo.png")

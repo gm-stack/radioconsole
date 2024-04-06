@@ -12,6 +12,7 @@ from AppManager.app import app
 from .backends import backends
 from util import timegraph, stat_label, stat_display, stat_view, stat_view_graph, extract_number
 from .status_icon import lte_status_icon
+from ..LogViewer import TerminalView
 
 class lte_status(app):
     backend = None
@@ -22,8 +23,8 @@ class lte_status(app):
     band_labels = {}
     band_values = [{}, {}]
 
-    def __init__(self, bounds, config, display):
-        super().__init__(bounds, config, display)
+    def __init__(self, bounds, config, display, name):
+        super().__init__(bounds, config, display, name)
         self.backend = backends[config.backend](config)
         self.data = {}
 
@@ -62,6 +63,11 @@ class lte_status(app):
             text='CA 1',
             manager=self.gui
         )
+
+        self.terminal_view = TerminalView(
+            bounds.w - 389, (bounds.h + bounds.y) - y, 389, y, "lte_config"
+        )
+
         y += config.line_height
 
         for ui_element in ['band_name', 'freq', 'bandwidth']:
@@ -123,7 +129,7 @@ class lte_status(app):
             'netmode': {'unit': ''}
         }.items():
             self.ui_element_graphs[ui_element] = stat_view_graph(
-                relative_rect=pygame.Rect(0, y, 800, 32),
+                relative_rect=pygame.Rect(0, y, 384, 32),
                 text_w=256,
                 name=ui_element,
                 manager=self.gui,
@@ -149,6 +155,10 @@ class lte_status(app):
             self.status_icons_updated = True
             time.sleep(1.0)
 
+    prev_mode = None
+    prev_bands = []
+    prev_lac = None
+
     def update(self, dt):
         if self.data_updated:
             for key in ['mode', 'modem', 'lac']:
@@ -168,11 +178,34 @@ class lte_status(app):
                 else:
                     for key, gui in self.band_values[1].items():
                         gui.set_text('')
+            
+                if self.data['mode'] != self.prev_mode or self.data['bands'] != self.prev_bands:
+                    self.prev_bands = self.data['bands']
+                    self.prev_mode = self.data.get("mode")
+                    self.log_bands()
+                
+                if self.data.get("lac") != self.prev_lac:
+                    self.prev_lac = self.data.get("lac")
+                    self.log_lac()
 
+                    
         super().update(dt)
 
+    
+    def log_bands(self):
+        band_names = ",".join([ f"{band['band']}@{band['freq']}/{band['bandwidth']}" for band in self.data['bands'] ])
+        self.log_msg(f"Using {self.data.get('mode')} at {band_names}")
+
+    def log_lac(self):
+        self.log_msg(f"Now connected to LAC {self.data.get('lac')}")
+
+    def log_msg(self, msg):
+        timestamp = time.strftime('%H:%M:%S')
+        self.terminal_view.write(f"{timestamp}: {msg}\n")
+    
     def draw(self, screen):
         if super().draw(screen):
+            self.terminal_view.draw(screen)
             for graph in self.ui_element_graphs.values():
                 graph.draw(screen)
             return True
@@ -182,3 +215,4 @@ class lte_status(app):
         super().process_events(e)
         if e.type == pygame.USEREVENT and e.user_type == pygame_gui.UI_BUTTON_PRESSED:
             self.backend.reboot_modem()
+            self.log_msg("Rebooting modem...")

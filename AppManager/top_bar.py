@@ -1,5 +1,6 @@
 import pygame
 import pygame_gui
+import fonts
 
 from config_reader import cfg
 
@@ -16,6 +17,7 @@ class top_bar(object):
             (cfg.display.DISPLAY_W, cfg.display.TOP_BAR_SIZE),
             cfg.theme_file
         )
+        fonts.load_fonts(self.gui)
         self.appname_label = pygame_gui.elements.UILabel(
             relative_rect=pygame.Rect(132, 2, cfg.display.TOP_BAR_APP_LABEL_WIDTH, cfg.display.TOP_BAR_SIZE-4),
             text='switcher',

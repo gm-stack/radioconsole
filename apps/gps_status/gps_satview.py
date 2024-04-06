@@ -21,7 +21,7 @@ class gps_satview(object):
         for i in range(0, 359, 15):
             end_x = (200*math.cos(math.radians(i)))
             end_y = (200*math.sin(math.radians(i)))
-            pygame.draw.aaline(self.surf, (0, 255, 0), (200, 200), (200 + end_x, 200 + end_y), 1)
+            pygame.draw.aaline(self.surf, (0, 255, 0), (200, 200), (200 + end_x, 200 + end_y))
 
         for sat in self.sky:
             sat_x = 200 + ((sat['el']*2) * math.cos(math.radians(sat['az'])))

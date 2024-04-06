@@ -18,8 +18,8 @@ class gps_status(app):
     ui_element_graphs = {}
     gps_satview = None
 
-    def __init__(self, bounds, config, display):
-        super().__init__(bounds, config, display)
+    def __init__(self, bounds, config, display, name):
+        super().__init__(bounds, config, display, name)
 
         self.status_icon = gps_status_icon()
         self.status_icons = [self.status_icon.surface]

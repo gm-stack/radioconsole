@@ -6,7 +6,7 @@ class raspi_status_icon():
     bgcolour = (0,0,0,255)
     def __init__(self):
         self.surface = surface.Surface((60,60), pygame.SRCALPHA)
-        self.font = pygame.font.Font("ttf/FiraCode-Regular.ttf", 12)
+        self.font = pygame.font.Font("ttf/B612-Regular.ttf", 12)
         self.surface.fill(self.bgcolour)
 
     def update(self, data):

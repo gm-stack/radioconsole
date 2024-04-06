@@ -25,6 +25,7 @@ class stat_view(object):
         self.unit = unit
 
         rr = relative_rect
+        self.has_label = True
         if split == 'lr':
             hw = label_s if label_s else int(rr.width / 2)
             label_rect = pygame.Rect(rr.x, rr.y, hw, rr.height)
@@ -33,14 +34,18 @@ class stat_view(object):
             hh = label_s if label_s else int(rr.height / 2)
             label_rect = pygame.Rect(rr.x, rr.y, rr.width, hh)
             value_rect = pygame.Rect(rr.x, rr.y + hh, rr.width, rr.height - hh)
+        elif split == 'no_label':
+            value_rect = pygame.Rect(rr.x, rr.y, rr.width, rr.height)
+            self.has_label = False
         else:
-            raise ValueError("split must be 'lr' or 'tb'")
+            raise ValueError("split must be 'lr', 'tb' or 'no_label'")
 
-        self.label = stat_label(
-            relative_rect=label_rect,
-            text=name,
-            manager=manager
-        )
+        if self.has_label:
+            self.label = stat_label(
+                relative_rect=label_rect,
+                text=name,
+                manager=manager
+            )
         self.value = stat_display(
             relative_rect=value_rect,
             text='',

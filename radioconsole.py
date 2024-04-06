@@ -43,6 +43,7 @@ try:
     am.register_app('lte_status', apps.lte_status)
     am.register_app('log_viewer', apps.LogViewer)
     am.register_app('raspi_status', apps.RaspiStatus)
+    am.register_app('systemd_status', apps.SystemDStatus)
 
     splash.update_status("instantiating apps")
     am.instantiate_apps(splash.update_status)

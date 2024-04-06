@@ -16,8 +16,8 @@ class RaspiStatus(app):
     ui_element_graphs = {}
     cpu_graph_y = {}
 
-    def __init__(self, bounds, config, display):
-        super().__init__(bounds, config, display)
+    def __init__(self, bounds, config, display, name):
+        super().__init__(bounds, config, display, name)
 
         y = display.TOP_BAR_SIZE
 
@@ -44,7 +44,7 @@ class RaspiStatus(app):
                 )
                 y += config.line_height
 
-            for i, ui_element in enumerate(['undervolt', 'freqcap', 'core_throttled', 'templimit']):
+            for i, ui_element in enumerate(['undervolt', 'freqcap', 'throttled', 'templimit']):
                 self.ui_element_values[host][ui_element] = stat_view(
                     relative_rect=pygame.Rect(i*110, y, 110, 64),
                     name=ui_element,
@@ -102,7 +102,7 @@ class RaspiStatus(app):
         return {
             'undervolt': 'ALERT' if undervolt else ('PREV' if prev_undervolt else 'OK'),
             'freqcap': 'ALERT' if freqcap else ('PREV' if prev_freqcap else 'OK'),
-            'core_throttled': 'ALERT' if throttled else ('PREV' if prev_throttled else 'OK'),
+            'throttled': 'ALERT' if throttled else ('PREV' if prev_throttled else 'OK'),
             'templimit': 'ALERT' if templimit else ('PREV' if prev_templimit else 'OK')
         }
 

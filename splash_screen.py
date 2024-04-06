@@ -8,7 +8,7 @@ class splash_screen():
     def __init__(self, screen):
         self.screen = screen
         self.screen_size = screen.get_size()
-        self.FONT = pygame.font.Font("ttf/FiraCode-Regular.ttf", 14)
+        self.FONT = pygame.font.Font("ttf/B612-Regular.ttf", 14)
 
     def draw_splash(self):
         logo = pygame.image.load("logo.png")

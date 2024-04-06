@@ -24,7 +24,9 @@ class TerminalView():
         'brightwhite': (255, 255, 255)
     }
 
-    def __init__(self, width, height, x, y):
+    def __init__(self, width, height, x, y, name=""):
+        self.name = name
+
         self.W = width
         self.H = height
         self.X = x
@@ -45,7 +47,7 @@ class TerminalView():
         print(f"term init as {self.terminal_w}x{self.terminal_h}, {self.char_w}x{self.char_h} font")
 
     def render_char(self, char, colour):
-        font = pygame.font.Font("ttf/FiraCode-Regular.ttf", 14)
+        font = pygame.font.Font("ttf/B612Mono-Regular.ttf", 14)
         text = font.render(char, True, colour)
         return text
 
@@ -92,7 +94,7 @@ class TerminalView():
             elif a == 10: # \n
                 newline()
             else:
-                print(f"unknown control char {a}")
+                print(f"{self.name}: unknown control char {a}")
 
 
 
