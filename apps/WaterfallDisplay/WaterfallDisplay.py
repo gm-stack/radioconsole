@@ -30,8 +30,8 @@ class WaterfallDisplay(app):
         18750: range(100000, 300001, 100000)
     }
 
-    def __init__(self, bounds, config, display):
-        super().__init__(bounds, config, display)
+    def __init__(self, bounds, config, display, name):
+        super().__init__(bounds, config, display, name)
 
         self.colourmap = [(int(c[0]*255), int(c[1]*255), int(c[2]*255)) for c in turbo_colormap.TURBO_COLORMAP_DATA]
 
