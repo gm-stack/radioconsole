@@ -1,16 +1,17 @@
 import time
 import threading
+from types import SimpleNamespace
 
 import pygame
 import paramiko
 
 import crash_handler
-from AppManager.app import app
+from ..common import SSHBackgroundThreadApp
 from config_reader import cfg
 from util import timegraph, stat_display, stat_label, stat_view, stat_view_graph, extract_number
 from .status_icon import raspi_status_icon
 
-class RaspiStatus(app):
+class RaspiStatus(SSHBackgroundThreadApp):
     ui_element_labels = {}
     ui_element_values = {}
     ui_element_graphs = {}
@@ -76,12 +77,13 @@ class RaspiStatus(app):
             self.data[host['host']] = {}
             status_icon = raspi_status_icon()
             self.status_icons.append(status_icon.surface)
-            self.backend_thread = threading.Thread(
-                target=self.run_command,
-                args=[host, status_icon],
-                daemon=True
+
+            self.run_ssh_func_persistent(
+                SimpleNamespace(**host),
+                f"host_{host}",
+                self.get_pi_status,
+                host, status_icon
             )
-            self.backend_thread.start()
 
 
     def parse_vc_throttle_status(self, status):
@@ -201,75 +203,33 @@ class RaspiStatus(app):
             return True
         return False
 
-    @crash_handler.monitor_thread_exception
-    def run_command(self, host, status_icon):
-        ssh = paramiko.SSHClient()
-        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    def get_pi_status(self, ts, host, status_icon):
+        def run_command(cmd):
+            return self.run_command(ts,cmd)
+        
+        self.data[host['host']]['model'] = run_command('cat /proc/device-tree/model')
+        self.data[host['host']]['hostname'] = run_command('hostname')
 
         while True:
-            try:
-                ssh.connect(
-                    host['host'],
-                    username=host['username'],
-                    port=host['port'],
-                    timeout=5,
-                    banner_timeout=10
-                )
-
-                ts = ssh.get_transport()
-
-                def run_command(cmd):
-                    ch = ts.open_session()
-                    ch.set_combine_stderr(True)
-                    stdout = ch.makefile('rb', -1)
-                    ch.exec_command(cmd)
-                    res = bytes()
-                    while True:
-                        out = stdout.channel.recv(1024)
-                        if not out:
-                            break
-                        else:
-                            res += out
-                    return res.decode('UTF-8').rstrip(' \t\r\n\x00')
-
-                self.data[host['host']]['model'] = run_command('cat /proc/device-tree/model')
-                self.data[host['host']]['hostname'] = run_command('hostname')
-
-                while True:
-                    self.data[host['host']]['clock_arm'] = run_command('vcgencmd measure_clock arm')
-                    self.data[host['host']]['throttled'] = run_command('vcgencmd get_throttled')
-                    self.data[host['host']]['volts_core'] = run_command('vcgencmd measure_volts core')
-                    self.data[host['host']]['temp'] = run_command('vcgencmd measure_temp')
-                    self.data[host['host']]['meminfo'] = run_command('cat /proc/meminfo')
-                    self.data[host['host']]['stat'] = run_command('cat /proc/stat')
+            self.data[host['host']]['clock_arm'] = run_command('vcgencmd measure_clock arm')
+            self.data[host['host']]['throttled'] = run_command('vcgencmd get_throttled')
+            self.data[host['host']]['volts_core'] = run_command('vcgencmd measure_volts core')
+            self.data[host['host']]['temp'] = run_command('vcgencmd measure_temp')
+            self.data[host['host']]['meminfo'] = run_command('cat /proc/meminfo')
+            self.data[host['host']]['stat'] = run_command('cat /proc/stat')
 
 
-                    self.data[host['host']]['status'] = ''
+            self.data[host['host']]['status'] = ''
 
-                    self.data[host['host']]['volts'] = extract_number(self.data[host['host']]['volts_core'])
-                    self.data[host['host']]['clock'] = extract_number(self.data[host['host']]['clock_arm'])
-                    if self.data[host['host']]['clock'] and self.data[host['host']]['volts']:
-                        self.data[host['host']]['freqdisp'] = f"{self.data[host['host']]['clock']/1000000.0:.0f}MHz/{float(self.data[host['host']]['volts']):.2f}V"
-                    else:
-                        self.data[host['host']]['freqdisp'] = ""
+            self.data[host['host']]['volts'] = extract_number(self.data[host['host']]['volts_core'])
+            self.data[host['host']]['clock'] = extract_number(self.data[host['host']]['clock_arm'])
+            if self.data[host['host']]['clock'] and self.data[host['host']]['volts']:
+                self.data[host['host']]['freqdisp'] = f"{self.data[host['host']]['clock']/1000000.0:.0f}MHz/{float(self.data[host['host']]['volts']):.2f}V"
+            else:
+                self.data[host['host']]['freqdisp'] = ""
 
-                    self.data[host['host']]['temp_num'] = extract_number(self.data[host['host']]['temp'])
+            self.data[host['host']]['temp_num'] = extract_number(self.data[host['host']]['temp'])
 
-                    self.host_updated[host['host']] = True
-                    self.data_updated = True
-                    status_icon.update(self.data[host['host']])
-                    time.sleep(self.config.refresh_seconds)
-
-            except OSError as e:
-                self.data[host['host']]['status'] = f"Connection error: {str(e)}"
-                status_icon.update(self.data[host['host']])
-                self.host_updated[host['host']] = True
-                self.data_updated = True
-
-            except paramiko.SSHException as e:
-                self.data[host['host']]['status'] = f"SSH error: {str(e)}"
-                status_icon.update(self.data[host['host']])
-                self.host_updated[host['host']] = True
-                self.data_updated = True
-
-            time.sleep(self.config.refresh_seconds)
+            self.host_updated[host['host']] = True
+            self.data_updated = True
+            status_icon.update(self.data[host['host']])

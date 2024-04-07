@@ -64,8 +64,8 @@ class LogViewer(SSHBackgroundThreadApp):
         self.prev_tail_command = None
 
         if self.logviewer_config.command:
+            self.status_message(f"ssh {self.logviewer_config.username}@{self.logviewer_config.host}:{self.logviewer_config.port}\n")
             self.set_tail_command(self.logviewer_config.command)
-
 
     def status_message(self, text):
         self.terminal_view.write(text, colour='cyan')
@@ -116,11 +116,7 @@ class LogViewer(SSHBackgroundThreadApp):
 
             self.data_updated = True
 
-        self.run_ssh_func_persistent(
-            "tail",
-            run_tail_command,
-            command
-        )
+        self.run_ssh_func_persistent(self.config, "tail", run_tail_command, command)
     
     def run_button_command(self, command):
         self.status_message(f"\n---\n>>> {command}\n")
@@ -129,10 +125,7 @@ class LogViewer(SSHBackgroundThreadApp):
             res = self.run_command(ts, command)
             self.console_message_onceonly(res)
 
-        self.run_ssh_func_single(
-            run_cmd,
-            command=command
-        )
+        self.run_ssh_func_single(self.config, run_cmd, command=command)
 
     def update(self, dt):
         if super().update(dt):

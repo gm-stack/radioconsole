@@ -127,6 +127,7 @@ class SystemDStatus(LogViewer):
             create_ui(service)
 
         self.run_ssh_func_persistent(
+            self.config,
             'service_state',
             self.do_fetch_service_info,
             self.config.services
@@ -178,7 +179,7 @@ class SystemDStatus(LogViewer):
                     self.console_message_onceonly(res)
                     # immediately reload service info
                     self.do_fetch_service_info(ts, self.config.services)
-                self.run_ssh_func_single(run_cmd)
+                self.run_ssh_func_single(self.config, run_cmd)
             elif e.ui_element in self.ui_element_status_buttons:
                 service = self.ui_element_status_buttons[e.ui_element]
                 self.setup_logviewer(service)

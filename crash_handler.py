@@ -62,6 +62,8 @@ def crash(exc, is_thread=False, threadmsg=None):
         tb = traceback.format_exc()
         thread_name = threading.currentThread().getName()
 
+    print(f"---\n{tb}\n---", file=sys.stderr)
+
     screen.fill((0, 0, 0))
 
     font = pygame.font.Font("ttf/FiraCode-Regular.ttf", 14)
@@ -74,8 +76,7 @@ def crash(exc, is_thread=False, threadmsg=None):
         msg = f"Thread {thread_name} crashed: \n"
         msg += f"{header}\n{tb}\n"
     msg += f"{header}\n>>> Click/tap or press any key to exit... <<<"
-
-    print(msg, file=sys.stderr)
+    
     lineheight = font.get_linesize()
     for i, line in enumerate(msg.splitlines()):
         text = font.render(line, True, (255, 0, 0))
