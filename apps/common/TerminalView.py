@@ -24,27 +24,27 @@ class TerminalView():
         'brightwhite': (255, 255, 255)
     }
 
-    def __init__(self, width, height, x, y, name=""):
+    def __init__(self, bounds, name=""):
         self.name = name
+        self.default_colour = 'white'
+        self.precache_font()
+        self.set_bounds(bounds)
 
-        self.W = width
-        self.H = height
-        self.X = x
-        self.Y = y
+    def set_bounds(self, bounds):
+        self.bounds = bounds
 
         self.terminal_x = 0
         self.terminal_y = 0
 
-        self.text_surf = surface.Surface((self.W, self.H))
+        self.text_surf = surface.Surface((self.bounds.w, self.bounds.h))
         self.text_surf.fill((0, 0, 0))
 
-        self.default_colour = 'white'
         self.current_colour = self.default_colour
-        self.precache_font()
 
-        self.terminal_w = int(self.W / self.char_w)
-        self.terminal_h = int(self.H / self.char_h)
+        self.terminal_w = int(self.bounds.w / self.char_w)
+        self.terminal_h = int(self.bounds.h / self.char_h)
         print(f"term init as {self.terminal_w}x{self.terminal_h}, {self.char_w}x{self.char_h} font")
+
 
     def render_char(self, char, colour):
         font = pygame.font.Font("ttf/B612Mono-Regular.ttf", 14)
@@ -77,7 +77,7 @@ class TerminalView():
             if self.terminal_y == self.terminal_h: # we just newlined off the bottom, scroll the screen
                 self.terminal_y -= 1
                 self.text_surf.scroll(0,-self.char_h)
-                self.text_surf.fill((0, 0, 0), rect=(0, (self.terminal_h - 1) * self.char_h, self.W, self.char_h))
+                self.text_surf.fill((0, 0, 0), rect=(0, (self.terminal_h - 1) * self.char_h, self.bounds.w, self.char_h))
 
         if colour:
             self.current_colour = colour
@@ -99,4 +99,5 @@ class TerminalView():
 
 
     def draw(self, display):
-        display.blit(self.text_surf, (self.X, self.Y), area=(0, 0, self.W, self.H))
+        # todo: work out actual dirty rect
+        display.blit(self.text_surf, (self.bounds.x, self.bounds.y), area=(0, 0, self.bounds.w, self.bounds.h))

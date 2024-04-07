@@ -14,18 +14,29 @@ from util import timegraph, stat_display, stat_label, stat_view, stat_view_graph
 
 from ..LogViewer import LogViewer
 
-class SystemDStatus(app):
+class SystemDStatus(LogViewer):
     service_status = {}
     ui_element_values = {}
     ui_element_start_stop_buttons = {}
     ui_element_status_buttons = {}
 
-    log_viewer = None
-
     data_updated = False
 
     def __init__(self, bounds, config, display, name):
-        super().__init__(bounds, config, display, name)
+        log_viewer_cfg = types.SimpleNamespace(
+            username=config.username,
+            host=config.host,
+            port=config.port,
+            retry_seconds=5,
+            command='',
+            commands=[],
+            command_button_h=0,
+            command_buttons_x=1,
+            command_button_margin=0
+        )
+
+        super().__init__(bounds, log_viewer_cfg, display, f"{name}_logviewer")
+        self.config = config
 
         y_off = display.TOP_BAR_SIZE
         x = 0
@@ -115,12 +126,11 @@ class SystemDStatus(app):
         for service in self.config.services:
             create_ui(service)
 
-        self.backend_thread = threading.Thread(
-            target=self.run_command,
-            args=[self.config],
-            daemon=True
+        self.run_ssh_func_persistent(
+            'service_state',
+            self.do_fetch_service_info,
+            self.config.services
         )
-        self.backend_thread.start()
 
         self.remaining_bounds = pygame.Rect(
             0,
@@ -128,33 +138,13 @@ class SystemDStatus(app):
             cfg.display.DISPLAY_W,
             cfg.display.DISPLAY_H - y_off
         )
+        # resize terminal view down to cover only 
+        # remaining space, as it inited fullscreen
+        self.terminal_view.set_bounds(self.remaining_bounds)
 
 
     def setup_logviewer(self, service):
-        name = f"systemd_logviewer_{service}"
-        if self.log_viewer and name == self.log_viewer.name:
-            return
-
-        command = f"journalctl --no-hostname -f -u {service}.service"
-
-        log_viewer_cfg = types.SimpleNamespace(
-            username=self.config.username,
-            host=self.config.host,
-            port=self.config.port,
-            retry_seconds=5,
-            command=command,
-            commands=[],
-            command_button_h=0,
-            command_buttons_x=1,
-            command_button_margin=0
-        )
-
-        if self.log_viewer:
-            self.log_viewer.stop_backend_thread()
-            del self.log_viewer
-        
-        self.log_viewer = LogViewer(self.remaining_bounds, log_viewer_cfg, self.display, name)
-
+        self.set_tail_command(f"journalctl --no-hostname -f -u {service}.service")
 
     def update(self, dt):
         if self.data_updated:
@@ -170,16 +160,9 @@ class SystemDStatus(app):
                     [ button.set_text(button_text) 
                         for button in self.ui_element_start_stop_buttons.keys()
                         if self.ui_element_start_stop_buttons[button] == unit_name ]
-
-        if self.log_viewer:
-            self.log_viewer.update(dt)
-            if self.log_viewer._had_update:
-                self.data_updated = True
         super().update(dt)
 
     def draw(self, screen):
-        if self.log_viewer:
-            self.log_viewer.draw(screen)
         if super().draw(screen):
             return True
         return False
@@ -190,87 +173,43 @@ class SystemDStatus(app):
             if e.ui_element in self.ui_element_start_stop_buttons:
                 service = self.ui_element_start_stop_buttons[e.ui_element]
                 self.setup_logviewer(service)
-                self.log_viewer.run_command(f"sudo service {service} {e.ui_element.text.lower()}")
-                # todo: immediate refresh
+                def run_cmd(ts):
+                    res = self.run_command(ts, f"sudo service {service} {e.ui_element.text.lower()}")
+                    self.console_message_onceonly(res)
+                    # immediately reload service info
+                    self.do_fetch_service_info(ts, self.config.services)
+                self.run_ssh_func_single(run_cmd)
             elif e.ui_element in self.ui_element_status_buttons:
                 service = self.ui_element_status_buttons[e.ui_element]
                 self.setup_logviewer(service)
-                
 
-    @crash_handler.monitor_thread_exception
-    def run_command(self, config):
-        ssh = paramiko.SSHClient()
-        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
-        services = set(config.services)
+    def do_fetch_service_info(self,ts,services):
+        def run_command(cmd):
+            return self.run_command(ts,cmd)
 
-        while True:
-            try:
-                ssh.connect(
-                    config.host,
-                    username=config.username,
-                    port=config.port,
-                    timeout=5,
-                    banner_timeout=10
-                )
+        list_units = run_command('systemctl list-units --type=service --all --output json --no-pager')
+        units = json.loads(list_units)
+        
+        list_unit_files = run_command('systemctl list-unit-files --type=service --all --output json --no-pager')
+        unit_files = json.loads(list_unit_files)
 
-                ts = ssh.get_transport()
+        unit_details = {}
 
-                def run_command(cmd):
-                    ch = ts.open_session()
-                    ch.set_combine_stderr(True)
-                    stdout = ch.makefile('rb', -1)
-                    ch.exec_command(cmd)
-                    res = bytes()
-                    while True:
-                        out = stdout.channel.recv(1024)
-                        if not out:
-                            break
-                        else:
-                            res += out
-                    return res.decode('UTF-8').rstrip(' \t\r\n\x00')
-
-                while True:
-                    self.status = ""
-                    
-                    try:
-                        list_units = run_command('systemctl list-units --type=service --all --output json --no-pager')
-                        units = json.loads(list_units)
-                        
-                        list_unit_files = run_command('systemctl list-unit-files --type=service --all --output json --no-pager')
-                        unit_files = json.loads(list_unit_files)
-
-                        unit_details = {}
-
-                        for service in services:
-                            unit = [unit for unit in units if unit['unit'] == f"{service}.service"]
-                            if len(unit) >= 1:
-                                unit_details[service] = unit[0]
-                            else:
-                                unit = [unit for unit in unit_files if unit['unit_file'] == f"{service}.service"]
-                                if len(unit) >= 1:
-                                    unit_details[service] = {
-                                        "description": service,
-                                        "load": 'unloaded',
-                                        "active": unit[0]['state']
-                                    }
-                                else:
-                                    unit_details[service] = { "description": f"Unit {service} not found"}
-                        
-                        self.service_status = unit_details
-
-                    except Exception as e:
-                        print(e)
-                    
-                    self.data_updated = True
-                    time.sleep(self.config.refresh_seconds)
-
-            except OSError as e:
-                self.status = f"Connection error: {str(e)}"
-                self.data_updated = True
-
-            except paramiko.SSHException as e:
-                self.status = f"SSH error: {str(e)}"
-                self.data_updated = True
-
-            time.sleep(1)
+        for service in services:
+            unit = [unit for unit in units if unit['unit'] == f"{service}.service"]
+            if len(unit) >= 1:
+                unit_details[service] = unit[0]
+            else:
+                unit = [unit for unit in unit_files if unit['unit_file'] == f"{service}.service"]
+                if len(unit) >= 1:
+                    unit_details[service] = {
+                        "description": service,
+                        "load": 'unloaded',
+                        "active": unit[0]['state']
+                    }
+                else:
+                    unit_details[service] = { "description": f"Unit {service} not found"}
+        
+        self.service_status = unit_details
+        self.data_updated = True

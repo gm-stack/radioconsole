@@ -42,7 +42,7 @@ class lte_status(app):
             manager=self.gui
         )
 
-        for ui_element in ['mode', 'modem', 'lac']:
+        for ui_element in ['modem', 'mode', 'lac']:
             self.ui_element_values[ui_element] = stat_view(
                 relative_rect=pygame.Rect(0, y, 512, 32),
                 label_s=128,
@@ -65,7 +65,13 @@ class lte_status(app):
         )
 
         self.terminal_view = TerminalView(
-            bounds.w - 389, (bounds.h + bounds.y) - y, 389, y, "lte_config"
+            pygame.Rect(
+                    389,
+                    y,
+                    bounds.w - 389,
+                    (bounds.h + bounds.y) - y
+            ),
+            "lte_config"
         )
 
         y += config.line_height
