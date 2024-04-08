@@ -67,8 +67,8 @@ class appSwitcher(object):
         self.top_bar.update(dt)
         if self.FRONTMOST_APP == 'switcher':
             self.gui.update(dt)
-        else:
-            self.running_apps[self.FRONTMOST_APP].update(dt)
+        for app_name, app in self.running_apps.items():
+            app.update(dt)
 
     def createAppButton(self, appname):
         total_padding = (cfg.switcher.BUTTONS_X + 1) * cfg.switcher.BUTTON_MARGIN

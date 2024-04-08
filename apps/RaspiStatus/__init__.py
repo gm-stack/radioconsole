@@ -73,23 +73,29 @@ class RaspiStatus(SSHBackgroundThreadApp):
         self.host_updated = {host['host']: True for host in self.config.hosts}
 
         for host in self.config.hosts:
-            create_ui(host['host'])
-            self.data[host['host']] = {}
+            host_config = SimpleNamespace(**host)
+            create_ui(host_config.host)
+            self.data[host_config.host] = {}
             status_icon = raspi_status_icon()
             self.status_icons.append(status_icon.surface)
 
             self.run_ssh_func_persistent(
-                SimpleNamespace(**host),
-                f"host_{host}",
+                host_config,
+                host_config.host,
                 self.get_pi_status,
                 host, status_icon
             )
+            # first call starts watchdog
+            self.data_good(host_config.host)
 
 
     def parse_vc_throttle_status(self, status):
         if not status:
             return {}
-        status = int(status.split('=')[1],16)
+        try:
+            status = int(status.split('=')[1],16)
+        except IndexError:
+            return {}
 
         undervolt = bool(status & 0x1)
         freqcap = bool(status & 0x2)
@@ -203,6 +209,12 @@ class RaspiStatus(SSHBackgroundThreadApp):
             return True
         return False
 
+    def no_data_update_for(self, host, sec_since):
+        self.data[host]['status'] = f"Warning: no data received for {sec_since}s"
+        self.host_updated[host] = True
+        self.data_updated = True
+        # todo: draw ! on status icon
+
     def get_pi_status(self, ts, host, status_icon):
         def run_command(cmd):
             return self.run_command(ts,cmd)
@@ -232,4 +244,5 @@ class RaspiStatus(SSHBackgroundThreadApp):
 
             self.host_updated[host['host']] = True
             self.data_updated = True
+            self.data_good(host['host'])
             status_icon.update(self.data[host['host']])

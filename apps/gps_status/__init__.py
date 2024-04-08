@@ -106,6 +106,7 @@ class gps_status(app):
                     text='',
                     manager=self.gui
                 )
+        self.data_good()
 
     @crash_handler.monitor_thread
     def backend_loop(self):
@@ -121,17 +122,18 @@ class gps_status(app):
                     self.gps_data[report['class']] = report
                     self.data_updated = True
 
-                    tpv = self.gps_data.get('TPV',{})
-                    skydata = self.gps_data.get('SKY',{}).get('satellites', [])
-                    numsats = len(skydata) # FIXME: de-duplicate this code
-                    numused = len([i for i in skydata if i['used']])
-                    sats_text = f"{numused}/{numsats}"
+                    self.tpv = self.gps_data.get('TPV',{})
+                    self.skydata = self.gps_data.get('SKY',{}).get('satellites', [])
+                    self.numsats = len(self.skydata)
+                    self.numused = len([i for i in self.skydata if i['used']])
+                    self.sats_text = f"{self.numused}/{self.numsats}"
 
                     self.status_icon.update(
-                        mode=self.gps_mode(tpv.get('mode','')),
-                        sats=sats_text
+                        mode=self.gps_mode(self.tpv.get('mode','')),
+                        sats=self.sats_text
                     )
                     self.status_icons_updated = True
+                    self.data_good()
             except OSError as e:
                 self.gps_data = {'status': f'Connection error: {str(e)}'}
                 self.status_icon.update(mode='-',sats='0/0')
@@ -161,37 +163,35 @@ class gps_status(app):
 
     def update(self, dt):
         if self.data_updated:
-            tpv = self.gps_data.get('TPV',{})
             for v in ['lat', 'lon']:
-                self.ui_element_values[v].set_text(f"{tpv.get(v,0):.6f}")
-            self.ui_element_values['alt'].set_text(f"{tpv.get('alt',0):.1f}m")
-            self.ui_element_values['trk'].set_text(f"1{tpv.get('track',0):.0f}")
+                self.ui_element_values[v].set_text(f"{self.tpv.get(v,0):.6f}")
+            self.ui_element_values['alt'].set_text(f"{self.tpv.get('alt',0):.1f}m")
+            self.ui_element_values['trk'].set_text(f"{self.tpv.get('track',0):.0f}")
 
-            v = tpv.get('speed', 0)
+            v = self.tpv.get('speed', 0)
             self.ui_element_graphs['speed'].update(float(v)*3.6) # m/s -> km/h
 
-            devices = self.gps_data.get('DEVICES',{}).get('devices',[])[0]
-            title = f"{devices.get('driver', '')} {devices.get('subtype','')} at {devices.get('path','')}:{devices.get('bps','')}:8{devices.get('parity','')}{devices.get('stopbits','')}"
-            self.ui_element_values['status'].set_text(title)
+            devices_list = self.gps_data.get('DEVICES',{}).get('devices',[])
+            if len(devices_list) > 0:
+                devices = devices_list[0]
+                title = f"{devices.get('driver', '')} {devices.get('subtype','')} at {devices.get('path','')}:{devices.get('bps','')}:8{devices.get('parity','')}{devices.get('stopbits','')}"
+                self.ui_element_values['status'].set_text(title)
 
-            self.ui_element_values['mode_t'].set_text(self.gps_mode(tpv.get('mode')))
+            self.ui_element_values['mode_t'].set_text(self.gps_mode(self.tpv.get('mode')))
 
             sats_text = ""
             if 'SKY' in self.gps_data:
-                skydata = self.gps_data['SKY'].get('satellites', [])
-                self.gps_satview.update_data(skydata)
-                skydata = sorted(list(skydata), key=lambda a: a['used'], reverse=True)
+                self.skydata = self.gps_data['SKY'].get('satellites', [])
+                self.gps_satview.update_data(self.skydata)
+                self.skydata = sorted(list(self.skydata), key=lambda a: a['used'], reverse=True)
                 for i in range(10):
                     for lbl in ['PRN', 'el', 'az', 'ss', 'used']:
                         satval = self.satellite_rows[i]
-                        if i < len(skydata):
-                            satval[lbl].set_text(str(skydata[i][lbl]))
+                        if i < len(self.skydata):
+                            satval[lbl].set_text(str(self.skydata[i][lbl]))
                         else:
                             satval[lbl].set_text('')
-                numsats = len(skydata)
-                numused = len([i for i in skydata if i['used']])
-                sats_text = f"{numused}/{numsats}"
-                self.ui_element_values['sats'].set_text(sats_text)
+                self.ui_element_values['sats'].set_text(self.sats_text)
             else:
                 for i in range(10):
                     for lbl in ['PRN', 'el', 'az', 'ss', 'used']:

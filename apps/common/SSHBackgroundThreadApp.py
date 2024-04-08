@@ -96,11 +96,17 @@ class SSHBackgroundThreadApp(app):
                     time.sleep(self.config.retry_seconds)
 
             except OSError as e:
-                self.error_message(f"Connection error: {str(e)}")
+                # FIXME: if not log?
+                #self.error_message(f"Connection error: {str(e)}")
+                self.data_updated = True
+
+            except EOFError as e:
+                # FIXME: if not log?
                 self.data_updated = True
 
             except paramiko.SSHException as e:
-                self.error_message(f"SSH error: {str(e)}")
+                # FIXME: if not log?
+                #self.error_message(f"SSH error: {str(e)}")
                 self.data_updated = True
             
             if onceonly:
