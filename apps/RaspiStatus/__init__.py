@@ -72,18 +72,21 @@ class RaspiStatus(SSHBackgroundThreadApp):
         self.data = {}
         self.host_updated = {host['host']: True for host in self.config.hosts}
 
+        self.status_icon_classes = {}
+
         for host in self.config.hosts:
             host_config = SimpleNamespace(**host)
             create_ui(host_config.host)
             self.data[host_config.host] = {}
             status_icon = raspi_status_icon()
+            self.status_icon_classes[host_config.host] = status_icon
             self.status_icons.append(status_icon.surface)
 
             self.run_ssh_func_persistent(
                 host_config,
                 host_config.host,
                 self.get_pi_status,
-                host, status_icon
+                host
             )
             # first call starts watchdog
             self.data_good(host_config.host)
@@ -160,6 +163,15 @@ class RaspiStatus(SSHBackgroundThreadApp):
                 data = self.data[host]
                 data.update(self.parse_vc_throttle_status(data.get('throttled')))
 
+                if data.get('status',''):
+                    icon = 'redalert'
+                elif any([data.get(c) == "ALERT" for c in ['undervolt','freqcap','throttled','templimit']]):
+                    icon = 'orangealert'
+                else:
+                    icon = None
+                self.status_icon_classes[host].update(data, icon)
+                self.status_icons_updated = True
+
                 data['id'] = f"{data.get('hostname', '')}: {data.get('model', '')}" \
                     if not data.get('status') else data['status']
 
@@ -210,19 +222,17 @@ class RaspiStatus(SSHBackgroundThreadApp):
         return False
 
     def no_data_update_for(self, host, sec_since):
-        self.data[host]['status'] = f"Warning: no data received for {sec_since}s"
+        self.data[host] = {'status': f"Warning: no data received for {sec_since}s"}
         self.host_updated[host] = True
         self.data_updated = True
-        # todo: draw ! on status icon
 
-    def get_pi_status(self, ts, host, status_icon):
+    def get_pi_status(self, ts, host):
         def run_command(cmd):
             return self.run_command(ts,cmd)
         
-        self.data[host['host']]['model'] = run_command('cat /proc/device-tree/model')
-        self.data[host['host']]['hostname'] = run_command('hostname')
-
         while True:
+            self.data[host['host']]['model'] = run_command('cat /proc/device-tree/model')
+            self.data[host['host']]['hostname'] = run_command('hostname')
             self.data[host['host']]['clock_arm'] = run_command('vcgencmd measure_clock arm')
             self.data[host['host']]['throttled'] = run_command('vcgencmd get_throttled')
             self.data[host['host']]['volts_core'] = run_command('vcgencmd measure_volts core')
@@ -233,16 +243,17 @@ class RaspiStatus(SSHBackgroundThreadApp):
 
             self.data[host['host']]['status'] = ''
 
-            self.data[host['host']]['volts'] = extract_number(self.data[host['host']]['volts_core'])
-            self.data[host['host']]['clock'] = extract_number(self.data[host['host']]['clock_arm'])
-            if self.data[host['host']]['clock'] and self.data[host['host']]['volts']:
-                self.data[host['host']]['freqdisp'] = f"{self.data[host['host']]['clock']/1000000.0:.0f}MHz/{float(self.data[host['host']]['volts']):.2f}V"
+            self.data[host['host']]['volts'] = extract_number(self.data[host['host']].get('volts_core'))
+            self.data[host['host']]['clock'] = extract_number(self.data[host['host']].get('clock_arm'))
+            if self.data[host['host']]['clock'] and self.data[host['host']].get('volts'):
+                clock = self.data[host['host']].get('clock',0.0)/1000000.0
+                volts = float(self.data[host['host']].get('volts'))
+                self.data[host['host']]['freqdisp'] = f"{clock:.0f}MHz/{volts:.2f}V"
             else:
                 self.data[host['host']]['freqdisp'] = ""
 
-            self.data[host['host']]['temp_num'] = extract_number(self.data[host['host']]['temp'])
+            self.data[host['host']]['temp_num'] = extract_number(self.data[host['host']].get('temp'))
 
             self.host_updated[host['host']] = True
             self.data_updated = True
             self.data_good(host['host'])
-            status_icon.update(self.data[host['host']])

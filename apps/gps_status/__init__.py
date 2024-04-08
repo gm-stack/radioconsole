@@ -3,6 +3,7 @@ import pygame
 import pygame_gui
 import time
 import gps
+import ctypes
 
 import crash_handler
 from config_reader import cfg
@@ -12,31 +13,34 @@ from util import timegraph, stat_display, stat_label, stat_view, stat_view_graph
 from .status_icon import gps_status_icon
 
 class gps_status(app):
-    gps_data = {}
-    ui_element_labels = {}
-    ui_element_values = {}
-    ui_element_graphs = {}
-    gps_satview = None
 
     def __init__(self, bounds, config, display, name):
         super().__init__(bounds, config, display, name)
 
+        self.gps_data = {}
+        self.tpv = {}
+
+        self.gps_error = ''
+
         self.status_icon = gps_status_icon()
         self.status_icons = [self.status_icon.surface]
-        self.status_icon.update(mode='-',sats='0/0')
+        self.status_icon.update(mode='-', sats='0/0', icon='redalert')
         self.status_icons_updated = True
 
-        self.backend_thread = threading.Thread(target=self.backend_loop, daemon=True)
-        self.backend_thread.start()
+        # actually, start it
+        self.backend_thread = None
+        self.restart_backend_thread()
 
         self.gps_satview = gps_satview((400, 400))
 
         y = display.TOP_BAR_SIZE
 
+        self.ui_element_values = {}
+        self.ui_element_graphs = {}
 
         self.ui_element_values['status'] = stat_label(
             relative_rect=pygame.Rect(0, y, 800, 32),
-            text='gps name goes here', manager=self.gui
+            text=f"{self.config.host}:{self.config.port}", manager=self.gui
         )
         y += 32
 
@@ -94,6 +98,8 @@ class gps_status(app):
         )
         y += 32
 
+        self.ui_element_labels = {}
+
         self.satellite_rows = [{} for i in range(10)]
         for i, lbl in enumerate(['PRN', 'el', 'az', 'ss', 'used']):
             self.ui_element_labels[lbl] = stat_label(
@@ -108,6 +114,17 @@ class gps_status(app):
                 )
         self.data_good()
 
+    def restart_backend_thread(self):
+        if self.backend_thread:
+            print("terminating existing gps backend thread")
+            ctypes.pythonapi.PyThreadState_SetAsyncExc(
+                ctypes.c_long(self.backend_thread.ident), 
+                ctypes.py_object(SystemExit)
+            )
+
+        self.backend_thread = threading.Thread(target=self.backend_loop, daemon=True)
+        self.backend_thread.start()
+
     @crash_handler.monitor_thread
     def backend_loop(self):
         while True:
@@ -117,8 +134,7 @@ class gps_status(app):
                     host=self.config.host,
                     port=self.config.port
                 )
-                while True:
-                    report = gpsd.next()
+                for report in gpsd:
                     self.gps_data[report['class']] = report
                     self.data_updated = True
 
@@ -130,21 +146,26 @@ class gps_status(app):
 
                     self.status_icon.update(
                         mode=self.gps_mode(self.tpv.get('mode','')),
-                        sats=self.sats_text
+                        sats=self.sats_text,
+                        icon=None
                     )
                     self.status_icons_updated = True
+                    self.gps_data['status'] = ''
+                    self.gps_error = ''
                     self.data_good()
             except OSError as e:
-                self.gps_data = {'status': f'Connection error: {str(e)}'}
-                self.status_icon.update(mode='-',sats='0/0')
+                self.gps_error = f'Connection error: {str(e)}'
+                self.tpv = {}
+                self.status_icon.update(mode='-', sats='0/0', icon='orangealert')
                 self.status_icons_updated = True
                 self.data_updated = True
-            except StopIteration:
-                self.gps_data = {'status': f'Disconnected'}
-                self.status_icon.update(mode='-',sats='0/0')
-                self.status_icons_updated = True
-                self.data_updated = True
-            time.sleep(5)
+
+            self.gps_error = f'Disconnected'
+            self.tpv = {}
+            self.status_icon.update(mode='-', sats='0/0', icon='orangealert')
+            self.status_icons_updated = True
+            self.data_updated = True
+            time.sleep(1)
 
     def draw(self, screen):
         if super().draw(screen):
@@ -163,6 +184,12 @@ class gps_status(app):
 
     def update(self, dt):
         if self.data_updated:
+            status_text = self.gps_data.get("status")
+            error_text = self.gps_error
+            if status_text or error_text:
+                msg = [x for x in [status_text, error_text] if x]
+                self.ui_element_values['status'].set_text(": ".join(msg))
+
             for v in ['lat', 'lon']:
                 self.ui_element_values[v].set_text(f"{self.tpv.get(v,0):.6f}")
             self.ui_element_values['alt'].set_text(f"{self.tpv.get('alt',0):.1f}m")
@@ -199,3 +226,16 @@ class gps_status(app):
                 self.ui_element_values['sats'].set_text('')
 
         super().update(dt)
+
+    def no_data_update_for(self, data_for, sec_since):
+        self.gps_data = {
+            'status': f"No GPS data received for {sec_since}s", 
+            'error': self.gps_data.get('error')
+        }
+        self.tpv = {}
+        self.status_icon.update(mode='-',sats='-', icon='redalert')
+        self.status_icons_updated = True
+        self.data_updated = True
+
+        if sec_since > 1 and sec_since % 10 == 0:
+            self.restart_backend_thread()

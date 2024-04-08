@@ -45,16 +45,16 @@ class app(object):
                 self.no_data_update_for(last_data_type, int(round(last_data_good_seconds)))
     
     def no_data_update_for(self, data_type, sec_since):
-        print(f"{self.name}: no data recvd for {data_type} for {sec_since}s")
+        print(f"{self.name}: no data recvd for \"{data_type}\" for {sec_since}s, and no handler in app for this")
 
     def update(self, dt):
-        if self.last_known_good_data:
-            self.check_last_good_data(dt)
         self._had_update = self.data_updated
         # avoids a race condition if another update arrives between now and draw()
         # and a subclass's update() method looks at data_updated to see if it should run
         self.data_updated = False
         self.gui.update(dt)
+        if self.last_known_good_data:
+            self.check_last_good_data(dt)
         return self._had_update
 
     def process_events(self, e):
