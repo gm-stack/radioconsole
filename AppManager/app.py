@@ -25,16 +25,17 @@ class app(object):
         self.status_icons = []
         self.last_known_good_data = {}
         self.last_known_good_seconds = {}
+        self.no_data_allowed_time = {}
 
-    def data_good(self, data_for=''):
+    def data_good(self, data_for='', no_data_allowed_time=10.0):
         self.last_known_good_data[data_for] = time.monotonic()
+        self.no_data_allowed_time[data_for] = no_data_allowed_time
 
     def check_last_good_data(self, dt):
         for last_data_type, last_data in self.last_known_good_data.items():
             last_data_good_seconds = time.monotonic() - last_data
             
-            # FIXME: make this time configurable
-            if last_data_good_seconds > 10.0:
+            if last_data_good_seconds > self.no_data_allowed_time[last_data_type]:
                 self.last_known_good_seconds[last_data_type] += dt
             else:
                 self.last_known_good_seconds[last_data_type] = 0
