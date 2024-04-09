@@ -138,7 +138,8 @@ class SystemDStatus(LogViewer):
             self.do_fetch_service_info,
             self.config.services
         )
-        self.data_good("services", 10.0)
+        self.max_no_data_seconds = int(config.retry_seconds) * 4.0
+        self.data_good("services", no_data_allowed_time=self.max_no_data_seconds)
         self.no_data = False
 
         self.remaining_bounds = pygame.Rect(
@@ -250,5 +251,5 @@ class SystemDStatus(LogViewer):
         self.service_status = unit_details
         if prev_service_status != self.service_status:
             self.data_updated = True
-            self.data_good("services", 30.0)
+            self.data_good("services", no_data_allowed_time=self.max_no_data_seconds)
             self.no_data = False

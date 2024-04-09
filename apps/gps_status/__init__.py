@@ -3,6 +3,7 @@ import pygame
 import pygame_gui
 import time
 import gps
+import gps.clienthelpers
 import ctypes
 
 import crash_handler
@@ -24,7 +25,7 @@ class gps_status(app):
 
         self.status_icon = gps_status_icon()
         self.status_icons = [self.status_icon.surface]
-        self.status_icon.update(mode='-', sats='0/0', icon='redalert')
+        self.status_icon.update(mode='-', sats='0/0', maidenhead='-', icon='redalert')
         self.status_icons_updated = True
 
         # actually, start it
@@ -146,9 +147,17 @@ class gps_status(app):
                     self.numused = len([i for i in self.skydata if i['used']])
                     self.sats_text = f"{self.numused}/{self.numsats}"
 
+                    lat = self.tpv.get('lat')
+                    lon = self.tpv.get('lon')
+                    if lat and lon:
+                        mh = gps.clienthelpers.maidenhead(lat,lon)
+                    else:
+                        mh = '-'
+
                     self.status_icon.update(
                         mode=self.gps_mode(self.tpv.get('mode','')),
                         sats=self.sats_text,
+                        maidenhead=mh,
                         icon=None
                     )
                     self.status_icons_updated = True
@@ -158,13 +167,13 @@ class gps_status(app):
             except OSError as e:
                 self.gps_error = f'Connection error: {str(e)}'
                 self.tpv = {}
-                self.status_icon.update(mode='-', sats='0/0', icon='orangealert')
+                self.status_icon.update(mode='-', sats='0/0', maidenhead='-', icon='orangealert')
                 self.status_icons_updated = True
                 self.data_updated = True
 
             self.gps_error = f'Disconnected'
             self.tpv = {}
-            self.status_icon.update(mode='-', sats='0/0', icon='orangealert')
+            self.status_icon.update(mode='-', sats='0/0', maidenhead='-', icon='orangealert')
             self.status_icons_updated = True
             self.data_updated = True
             time.sleep(1)
@@ -235,7 +244,7 @@ class gps_status(app):
             'error': self.gps_data.get('error')
         }
         self.tpv = {}
-        self.status_icon.update(mode='-',sats='-', icon='redalert')
+        self.status_icon.update(mode='-',sats='-', maidenhead='-', icon='redalert')
         self.status_icons_updated = True
         self.data_updated = True
 

@@ -12,7 +12,7 @@ from AppManager.app import app
 from .backends import backends
 from util import timegraph, stat_label, stat_display, stat_view, stat_view_graph, extract_number
 from .status_icon import lte_status_icon
-from ..LogViewer import TerminalView
+from ..common import TerminalView
 
 class lte_status(app):
     backend = None
