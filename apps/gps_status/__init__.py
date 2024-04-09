@@ -39,6 +39,7 @@ class gps_status(app):
         self.ui_element_graphs = {}
 
         self.ui_element_values['status'] = stat_label(
+            object_id="#param_label_top",
             relative_rect=pygame.Rect(0, y, 800, 32),
             text=f"{self.config.host}:{self.config.port}", manager=self.gui
         )
@@ -103,6 +104,7 @@ class gps_status(app):
         self.satellite_rows = [{} for i in range(10)]
         for i, lbl in enumerate(['PRN', 'el', 'az', 'ss', 'used']):
             self.ui_element_labels[lbl] = stat_label(
+                object_id="#param_label_vert",
                 relative_rect=pygame.Rect(i*80, y, 80, 32),
                 text=lbl, manager=self.gui
             )

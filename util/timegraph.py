@@ -30,7 +30,7 @@ class timegraph(object):
         self.redraw()
 
     def redraw(self):
-        self.surface.fill((0x21, 0x28, 0x2d))
+        self.surface.fill((0x11,0x18,0x1d))
         if not self.max_value and not self.min_value:
             return
 

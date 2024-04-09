@@ -4,17 +4,19 @@ import pygame
 from . import timegraph
 
 class stat_display(pygame_gui.elements.ui_label.UILabel):
-    def __init__(self, *args, **kwargs):
-        kwargs['object_id'] = '#param_value'
+    def __init__(self, *args, object_id='#param_value', **kwargs):
+        kwargs['object_id'] = object_id
+        #kwargs['object_id'] = "#param_value"
         super().__init__(*args, **kwargs)
 
 class stat_label(pygame_gui.elements.ui_label.UILabel):
-    def __init__(self, *args, **kwargs):
-        kwargs['object_id'] = '#param_label'
+    def __init__(self, *args, object_id='#param_label', **kwargs):
+        kwargs['object_id'] = object_id
+        #kwargs['object_id'] = "#param_label"
         super().__init__(*args, **kwargs)
 
 class stat_view(object):
-    def __init__(self, relative_rect, name, manager, label_s=None, split='lr', colourmap={}, colourmap_mode=None, unit=''):
+    def __init__(self, relative_rect, name, manager, label_s=None, split='lr', colourmap={}, colourmap_mode=None, unit='', object_id_label='', object_id_value=''):
         self.colourmap = colourmap
         self.colourmap_mode = colourmap_mode
         
@@ -30,23 +32,30 @@ class stat_view(object):
             hw = label_s if label_s else int(rr.width / 2)
             label_rect = pygame.Rect(rr.x, rr.y, hw, rr.height)
             value_rect = pygame.Rect(rr.x + hw, rr.y, rr.width - hw, rr.height)
+            gradient_dir = "_horz"
         elif split == 'tb':
             hh = label_s if label_s else int(rr.height / 2)
             label_rect = pygame.Rect(rr.x, rr.y, rr.width, hh)
             value_rect = pygame.Rect(rr.x, rr.y + hh, rr.width, rr.height - hh)
+            gradient_dir = "_vert"
         elif split == 'no_label':
             value_rect = pygame.Rect(rr.x, rr.y, rr.width, rr.height)
             self.has_label = False
+            gradient_dir = ""
         else:
             raise ValueError("split must be 'lr', 'tb' or 'no_label'")
 
         if self.has_label:
+            obj_id = object_id_label if object_id_label else f"#param_label{gradient_dir}"
             self.label = stat_label(
+                object_id=obj_id,
                 relative_rect=label_rect,
                 text=name,
                 manager=manager
             )
+        obj_id = object_id_value if object_id_value else f"#param_value{gradient_dir}"
         self.value = stat_display(
+            object_id=obj_id,
             relative_rect=value_rect,
             text='',
             manager=manager
@@ -96,7 +105,8 @@ class stat_view_graph(object):
             colourmap=colourmap,
             colourmap_mode=colourmap_mode,
             unit=unit,
-            label_s=label_s
+            label_s=label_s,
+            object_id_value="#param_value"
         )
 
         self.graph = timegraph(

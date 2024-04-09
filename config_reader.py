@@ -30,3 +30,4 @@ class cfg:
             config=SimpleNamespace(**m['config'])
         )
     theme_file = theme.name
+    theme = _config['theme']

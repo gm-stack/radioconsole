@@ -23,7 +23,6 @@ class app(object):
         self._had_update = True
         self.status_icons_updated = True
         self.status_icons = []
-        self.second_counter = 0.0
         self.last_known_good_data = {}
         self.last_known_good_seconds = {}
 

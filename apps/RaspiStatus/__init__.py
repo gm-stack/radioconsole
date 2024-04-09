@@ -30,6 +30,7 @@ class RaspiStatus(SSHBackgroundThreadApp):
             self.ui_element_graphs[host] = {}
 
             self.ui_element_values[host]['id'] = stat_label(
+                object_id="#param_label_top_lighter",
                 relative_rect=pygame.Rect(0, y, 800, 32),
                 text='', manager=self.gui
             )
@@ -137,6 +138,7 @@ class RaspiStatus(SSHBackgroundThreadApp):
             return
         statlines = [l for l in stat.split('\n') if l.startswith('cpu') and not l.startswith('cpu ')]
         data['n_cpus'] = len(statlines)
+        cpu_total_percent = 0.0
         for line in statlines:
             lp = line.split(" ")
             cpu_num = int(lp[0][3])
@@ -151,9 +153,13 @@ class RaspiStatus(SSHBackgroundThreadApp):
             if totaltime == prev_totaltime: # no time passed since last measurement
                 return
 
-            data[f"cpu{cpu_num}_percent"] = 1.0 - ((idletime - prev_idletime) / (totaltime - prev_totaltime))
+            cpu_percent = (1.0 - ((idletime - prev_idletime) / (totaltime - prev_totaltime))) * 100.0
+            cpu_total_percent += cpu_percent
+
+            data[f"cpu{cpu_num}_percent"] = cpu_percent
             data[f"cpu{cpu_num}_idletime"] = idletime
             data[f"cpu{cpu_num}_totaltime"] = totaltime
+        data['cpu_all_percent'] = cpu_total_percent / data['n_cpus']
 
     def update(self, dt):
         for hostconfig in self.config.hosts:
@@ -231,6 +237,8 @@ class RaspiStatus(SSHBackgroundThreadApp):
             return self.run_command(ts,cmd)
         
         while True:
+            start_time = time.monotonic()
+
             self.data[host['host']]['model'] = run_command('cat /proc/device-tree/model')
             self.data[host['host']]['hostname'] = run_command('hostname')
             self.data[host['host']]['clock_arm'] = run_command('vcgencmd measure_clock arm')
@@ -239,7 +247,6 @@ class RaspiStatus(SSHBackgroundThreadApp):
             self.data[host['host']]['temp'] = run_command('vcgencmd measure_temp')
             self.data[host['host']]['meminfo'] = run_command('cat /proc/meminfo')
             self.data[host['host']]['stat'] = run_command('cat /proc/stat')
-
 
             self.data[host['host']]['status'] = ''
 
@@ -257,3 +264,7 @@ class RaspiStatus(SSHBackgroundThreadApp):
             self.host_updated[host['host']] = True
             self.data_updated = True
             self.data_good(host['host'])
+
+            sleep_time = float(self.config.refresh_seconds) - (time.monotonic() - start_time)
+            if sleep_time > 0:
+                time.sleep(sleep_time)

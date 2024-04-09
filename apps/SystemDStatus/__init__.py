@@ -11,6 +11,7 @@ import crash_handler
 from AppManager.app import app
 from config_reader import cfg
 from util import timegraph, stat_display, stat_label, stat_view, stat_view_graph, extract_number
+from .status_icon import systemd_status_icon
 
 from ..LogViewer import LogViewer
 
@@ -40,6 +41,11 @@ class SystemDStatus(LogViewer):
 
         y_off = display.TOP_BAR_SIZE
         x = 0
+
+        self.status_icon = systemd_status_icon()
+        self.status_icons = [self.status_icon.surface]
+        self.status_icon.update(0,0,0,icon=None)
+        self.status_icons_updated = True
 
         def create_ui(service):
             nonlocal y_off
@@ -132,6 +138,8 @@ class SystemDStatus(LogViewer):
             self.do_fetch_service_info,
             self.config.services
         )
+        self.data_good("services")
+        self.no_data = True
 
         self.remaining_bounds = pygame.Rect(
             0,
@@ -149,19 +157,45 @@ class SystemDStatus(LogViewer):
 
     def update(self, dt):
         if self.data_updated:
+            count = 0
+            running = 0
+            activating = 0
+            errored = 0
             for unit_name in self.config.services:
-                service = self.service_status.get(unit_name, None)
+                service = self.service_status.get(unit_name, {})
+                self.ui_element_values[unit_name]['description'].set_text(service.get('description', unit_name))
+                self.ui_element_values[unit_name]['load'].set_text(service.get('load', ''))
+                self.ui_element_values[unit_name]['sub'].set_text(service.get('sub', ''))
+                self.ui_element_values[unit_name]['active'].set_text(service.get('active', ''))
+                
+                button_text = "Start" if service.get('active') in ('inactive', 'disabled', 'failed') else 'Stop'
+                [ button.set_text(button_text) 
+                    for button in self.ui_element_start_stop_buttons.keys()
+                    if self.ui_element_start_stop_buttons[button] == unit_name ]
                 if service:
-                    self.ui_element_values[unit_name]['description'].set_text(service.get('description', unit_name))
-                    self.ui_element_values[unit_name]['load'].set_text(service.get('load', ''))
-                    self.ui_element_values[unit_name]['sub'].set_text(service.get('sub', ''))
-                    self.ui_element_values[unit_name]['active'].set_text(service.get('active', ''))
-                    
-                    button_text = "Start" if service.get('active') in ('inactive', 'disabled', 'failed') else 'Stop'
-                    [ button.set_text(button_text) 
-                        for button in self.ui_element_start_stop_buttons.keys()
-                        if self.ui_element_start_stop_buttons[button] == unit_name ]
+                    count += 1
+                if service.get('active') == "active":
+                    running += 1
+                if service.get('active') == 'activating':
+                    activating += 1
+                if service.get('active') == 'failed':
+                    errored += 1
+                
+            icon = None
+            if activating > 0:
+                icon = 'orangealert'
+            if errored > 0 or self.no_data:
+                icon = 'redalert'
+
+            self.status_icon.update(count, running, errored, icon=icon)
+            self.status_icons_updated = True
         super().update(dt)
+    
+    def no_data_update_for(self, data_for, sec_since):
+        self.service_status = {}
+        self.status_icon.update(0,0,0, icon='redalert')
+        self.status_icons_updated = True
+        self.no_data = True
 
     def draw(self, screen):
         if super().draw(screen):
@@ -212,5 +246,9 @@ class SystemDStatus(LogViewer):
                 else:
                     unit_details[service] = { "description": f"Unit {service} not found"}
         
+        prev_service_status = self.service_status
         self.service_status = unit_details
-        self.data_updated = True
+        if prev_service_status != self.service_status:
+            self.data_updated = True
+            self.data_good("services")
+            self.no_data = False

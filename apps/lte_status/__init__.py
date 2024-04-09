@@ -147,6 +147,7 @@ class lte_status(app):
     @crash_handler.monitor_thread
     def backend_loop(self):
         while True:
+            icon = None
             try:
                 self.data = self.backend.fetch_stats()
                 if not self.data.get('mode', ''):

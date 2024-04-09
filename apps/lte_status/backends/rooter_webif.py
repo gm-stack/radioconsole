@@ -13,7 +13,7 @@ class RooterBackend(object):
 
     def login(self):
         r = requests.post(
-            f"http://{self.config.host}/cgi-bin/luci",
+            f"http://{self.config.host}:{self.config.port}/cgi-bin/luci",
             data={
                 'luci_username': self.config.username,
                 'luci_password': self.config.password
@@ -33,7 +33,7 @@ class RooterBackend(object):
             self.login()
         if self.sysauth:
             r = requests.get(
-                f'http://{self.config.host}/cgi-bin/luci/admin/modem/get_csq', 
+                f'http://{self.config.host}:{self.config.port}/cgi-bin/luci/admin/modem/get_csq', 
                 cookies={'sysauth': self.sysauth},
                 timeout=5
             )
@@ -51,14 +51,14 @@ class RooterBackend(object):
             self.login()
         else:
             r = requests.get(
-                f'http://{self.config.host}/cgi-bin/luci/admin/system/reboot',
+                f'http://{self.config.host}:{self.config.port}/cgi-bin/luci/admin/system/reboot',
                 cookies={'sysauth': self.sysauth},
                 timeout=5
             )
             token = self.TOKEN_REGEX.search(r.text).groups()[0]
             
             r = requests.post(
-                f'http://{self.config.host}/cgi-bin/luci/admin/system/reboot/call',
+                f'http://{self.config.host}:{self.config.port}/cgi-bin/luci/admin/system/reboot/call',
                 cookies={'sysauth': self.sysauth},
                 data={'token': token},
                 timeout=5
