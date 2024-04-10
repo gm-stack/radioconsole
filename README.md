@@ -2,15 +2,38 @@
 
 Radioconsole is a GUI to control various Raspberry Pi, Linux and Radio related things. If you want a touchscreen controller to manage things running on various systems, this might be useful.
 
+# Documentation
+
+- General Readme - this document
+  - Overview of the Radioconsole apps
+- [Installing Radioconsole](doc/radioconsole-install.md)
+  - More specific instructions to install Radioconsole on a Pi
+- [Theming Radioconsole](doc/theming-radioconsole.md)
+  - How to customise Radioconsole's appearance
+- [Direwolf Bluetooth](carpi-notes/direwolf-bluetooth.md)
+  - How to set up Direwolf to allow TNC connections via Bluetooth
+- [GPSd Difficulties](carpi-notes/gpsd-difficulties.md)
+  - How to stop GPSd holding every serial port open, whether a GPS or not
+  - How to make GPSd work if your GPS is FTDI or PL2303
+  - How to stop GPSd reconfiguring your GPS back to NMEA mode
+  - How to make GPSd not spend ages detecting baud rate when you know what it is
+  - How to make GPSd listen on all interfaces and accept connections over the network
+
 ## Supported Hardware
 
-This app is primarily designed to run on a Raspberry Pi, drawing directly to the screen with no X running but as it's written in Python and PyGame, it should run on many other platforms as well.  There is specific support for directly obtaining touch events from the FT5406 touch chip as used in the official Raspberry Pi Touchscreen Display to work around touch being broken in framebuffer mode.
+This app is primarily designed to run on a Raspberry Pi, with the official touchscreen addon.
 
-It's known to also work on Mac OS X as that is where some development occurs.
+It is written in Python, using PyGame. It is primarily designed to draw directly to the framebuffer with no X running for the best performance, however as PyGame uses SDL, it can also use any other supported video card.
+
+There is specific support for directly obtaining touch events from the FT5406 touchscreen controller as used in the official Raspberry Pi Touchscreen Display, as the included driver does not function correctly in framebuffer mode.
+
+It will also run on Mac OS X as that is where a lot of the development occurs.
+
+Required packages are in `requirements.txt`.
 
 ## How it works
 
-A number of modules are provided to the user, and the user provides a `config.yaml` featuring configuration for one or more instances of each.
+A number of modules are provided to the user, and the user provides a `config.yaml` featuring configuration for one or more instances of each. An example config can be found in `config.yaml.example`.
 
 # A quick tour
 
@@ -18,7 +41,7 @@ A number of modules are provided to the user, and the user provides a `config.ya
 
 ![radioconsole switcher](doc/switcher.png)
 
-This is the least interesting screen, but it's the most important. This allows you to launch all the apps defined in the config.
+This is the least interesting screen, but it's also the most important. This allows you to launch all the apps defined in the config.
 
 **config.yaml:**
 ``` yaml
@@ -334,130 +357,4 @@ waterfall_server:
   device_serial: '00000007'
   if_freq: 124488500 # 124487000 + 1500
   sample_rate: 1200000
-```
-
-# Mostly Raspberry Pi focused Installation Notes
-
-Install [Raspberry Pi OS](https://www.raspberrypi.org/downloads/raspberry-pi-os/) onto your card and boot up.
-
-Is your touchscreen upside down? Add `lcd_rotate=2` to `/boot/config.txt` and reboot. There's some dispute between different case manufacturers about which way is up, and the Raspberry Pi foundation changed their mind as well.
-
-Don't use `display_rotate` if you're using the official touchscreen - that will rotate in software which is slower.
-
-Run `sudo raspi_config` and set the following:
-- Menu 1 -> Change your password
-- Menu 2 -> Set up your WLAN network
-- Menu 3 -> Set boot settings to console-only with no auto-login
-- Menu 3 -> Disable wait for network on boot
-- Menu 5 -> Enable SSH
-
-Generate a SSH key, making sure it is in PEM format. The current stable version of paramiko does not support the new openssh format keys.
-```
-ssh-keygen -m pem
-````
-
-Copy the key generated under the pi user to root.
-```
-sudo cp -R ~/.ssh ~root/
-```
-
-Allow the root user to connect back in as pi over SSH (used for raspi_status)
-```
-cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
-```
-
-Install some of the required libraries through apt-get to allow downloading binaries rather than building from source, saving a bit of time.
-```
-sudo apt-get install python3-pip python3-numpy python3-pygame cython3 libfftw3-dev librtlsdr-dev python3-scipy python3-paramiko
-```
-
-Install Radioconsole
-```
-sudo apt-get install git
-git clone git@github.com:gm-stack/radioconsole.git
-cd radioconsole
-```
-
-Install the rest of the dependencies
-```
-sudo pip3 install -r requirements.txt
-```
-
-Install the driver for FT5406 touchscreen controllers.
-```
-git clone https://github.com/pimoroni/python-multitouch
-cd python-multitouch
-sudo ./install
-```
-
-Edit config.yml (ok, you don't have to use `vim`) - see above sections for a config reference.
-```
-sudo apt-get install vim
-vim config.yaml
-```
-
-Install the SystemD service for radioconsole to make it start on boot:
-```
-sudo cp radioconsole.service /etc/systemd/system/
-sudo systemctl enable radioconsole
-sudo systemctl start radioconsole
-```
-
-If using the rtlsdr panadapter (if you don't know what that is, you probably won't) - also, this can go on another Pi if the rtlsdr isn't plugged into this one:
-```
-cp waterfall_server.service /etc/systemd/system/
-systemctl enable waterfall_server
-systemctl start waterfall_server
-```
-
-Optional:
-Add `disable_splash=1`, `dtoverlay=pi3-disable-bt` (if on pi3), `boot_delay=0` to /boot/cmdline.txt to save about 5-7 seconds on boot.
-
-# Theming
-
-`pygame_gui` supports a theme file, normally in JSON. Radioconsole will take whatever is defined in `config.yaml` under `theme`, convert it to JSON, and load it into `pygame_gui`.
-
-``` yaml
-theme:
-  defaults:
-    colours:
-      normal_bg: "#4c5052"
-      hovered_bg: "#63686b"
-      disabled_bg: "#25292e"
-      selected_bg: "#365880"
-      active_bg: "#365880"
-      dark_bg: "#21282d"
-      disabled_dark_bg: "#181818"
-      normal_text: "#bbbbbb"
-      hovered_text: "#bbbbbb"
-      disabled_text: "#808080"
-      selected_text: "#bbbbbb"
-      active_text: "#bbbbbb"
-      normal_border: "#5c6062"
-      hovered_border: "#73787b"
-      disabled_border: "#35393e"
-      selected_border: "#466890"
-      active_border: "#466890"
-      link_text: "#6897bb"
-      link_hover: "#84bfed"
-      link_selected: "#84bfed"
-      text_shadow: "#777777"
-      filled_bar: "#f4251b"
-      unfilled_bar: "#CCCCCC"
-  '#param_label':
-    colours:
-      normal_text: "#FF00FF"
-      dark_bg: "#151D22"
-    font:
-      name: "fira_code"
-      size: 14
-      bold: 1
-  '#param_value':
-    colours:
-      normal_text: "#bbbbbb"
-      dark_bg: "#21282d"
-    font:
-      name: "fira_code"
-      size: 14
-      bold: 0
 ```
