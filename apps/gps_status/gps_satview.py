@@ -113,12 +113,15 @@ class gps_satview(object):
 
             self.surf.blit(self.sat_icons[sat_colour], sat_pos)
 
-        if (lat := tpv.get('lat')) and (lon := tpv.get('lon')):
+        lat = tpv.get('lat')
+        lon = tpv.get('lon')
+        if lat and lon:
             lat_text = self.font.render(f"{lat:.6f}°", True, self.text_colour)
             lon_text = self.font.render(f"{lon:.6f}°", True, self.text_colour)
             self.surf.blit(lat_text, (4,4))
             self.surf.blit(lon_text, (124,4))
-        if alt := tpv.get('alt'):
+        alt = tpv.get('alt')
+        if alt:
             alt_text = self.font.render(f"{alt:.1f}m", True, self.text_colour)
             self.surf.blit(alt_text, (244,4))
 
@@ -138,6 +141,8 @@ class gps_satview(object):
         v = tpv.get('speed', 0)
         spd_text = self.bigfont.render(f"{float(v)*3.6:.1f}km/h", True, self.text_colour)
         self.surf.blit(spd_text, (4, (self.bounds.h - mh_text.get_height() - 4)))
+
+
 
     def draw(self, screen):
         screen.blit(self.surf, self.bounds.topleft)
