@@ -97,7 +97,7 @@ modules:
       - host: 172.16.0.29    # you can have multiple hosts
 ```
 
-More than one host is supported (and they're much happier than the Pi above):
+More than one host is supported:
 
 ![raspi status](doc/status_2_hosts.png)
 
