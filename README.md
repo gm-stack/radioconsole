@@ -4,7 +4,7 @@ Radioconsole is a GUI to control various Raspberry Pi, Linux and Radio related t
 
 # Documentation
 
-- General Readme - this document
+- [General Readme - this document](#a-quick-tour)
   - Overview of the Radioconsole apps
 - [Installing Radioconsole](doc/radioconsole-install.md)
   - More specific instructions to install Radioconsole on a Pi
