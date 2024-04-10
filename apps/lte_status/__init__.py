@@ -23,8 +23,8 @@ class lte_status(app):
     band_labels = {}
     band_values = [{}, {}]
 
-    def __init__(self, bounds, config, display, name):
-        super().__init__(bounds, config, display, name)
+    def __init__(self, bounds, config, name):
+        super().__init__(bounds, config, name)
         self.backend = backends[config.backend](config)
         self.data = {}
 
@@ -34,10 +34,10 @@ class lte_status(app):
         self.backend_thread = threading.Thread(target=self.backend_loop, daemon=True)
         self.backend_thread.start()
 
-        y = display.TOP_BAR_SIZE
+        y = bounds.y
 
         self.button_reboot = pygame_gui.elements.UIButton(
-            relative_rect=pygame.Rect(display.DISPLAY_W - 256, y, 256, 64),
+            relative_rect=pygame.Rect(bounds.w - 256, y, 256, 64),
             text="Reboot Modem",
             manager=self.gui
         )
@@ -49,9 +49,9 @@ class lte_status(app):
                 name=ui_element,
                 manager=self.gui
             )
-            y += config.line_height
+            y += 32
 
-        y += config.line_height / 2
+        y += 16
 
         stat_label(
             relative_rect=pygame.Rect(128, y, 128, 32),
@@ -74,7 +74,7 @@ class lte_status(app):
             "lte_config"
         )
 
-        y += config.line_height
+        y += 32
 
         for ui_element in ['band_name', 'freq', 'bandwidth']:
             self.band_labels[ui_element] = stat_label(
@@ -92,9 +92,9 @@ class lte_status(app):
                 text='',
                 manager=self.gui
             )
-            y += config.line_height
+            y += 32
 
-        y += config.line_height / 2
+        y += 16
 
         for ui_element, kwargs in {
             'rsrq': {
@@ -142,7 +142,7 @@ class lte_status(app):
                 colourmap_mode='gt',
                 **kwargs
             )
-            y += config.line_height
+            y += 32
 
     @crash_handler.monitor_thread
     def backend_loop(self):

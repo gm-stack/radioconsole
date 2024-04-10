@@ -7,14 +7,13 @@ import fonts
 from config_reader import cfg
 
 class app(object):
+    default_config = {}
     config = None
     bounds = None
-    display = None
 
-    def __init__(self, bounds, config, display, name):
+    def __init__(self, bounds, config, name):
         self.config = config
         self.bounds = bounds
-        self.display = display
         self.name = name
         self.gui = pygame_gui.UIManager(cfg.display.size, cfg.theme_file)
         fonts.load_fonts(self.gui)

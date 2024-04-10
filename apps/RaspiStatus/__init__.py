@@ -17,10 +17,10 @@ class RaspiStatus(SSHBackgroundThreadApp):
     ui_element_graphs = {}
     cpu_graph_y = {}
 
-    def __init__(self, bounds, config, display, name):
-        super().__init__(bounds, config, display, name)
+    def __init__(self, bounds, config, name):
+        super().__init__(bounds, config, name)
 
-        y = display.TOP_BAR_SIZE
+        y = bounds.y
 
         def create_ui(host):
             nonlocal y

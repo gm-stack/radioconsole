@@ -16,9 +16,9 @@ from config_reader import cfg
 
 class SSHBackgroundThreadApp(app):
 
-    def __init__(self, bounds, config, display, name):
+    def __init__(self, bounds, config, name):
         self.backend_threads = {}
-        super().__init__(bounds, config, display, name)
+        super().__init__(bounds, config, name)
 
     def run_ssh_func_persistent(self, host, thread_name, func, *args, **kwargs):
         # run a function persistently in a SSH session which shouldn't exit

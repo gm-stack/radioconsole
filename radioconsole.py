@@ -44,7 +44,7 @@ try:
     am.register_app('log_viewer', apps.LogViewer)
     am.register_app('raspi_status', apps.RaspiStatus)
     am.register_app('systemd_status', apps.SystemDStatus)
-    am.register_app('systemd_logviewer', apps.SystemDLogViewer)
+    am.register_app('systemd_log_viewer', apps.SystemDLogViewer)
 
     splash.update_status("instantiating apps")
     am.instantiate_apps(splash.update_status)

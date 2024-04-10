@@ -15,8 +15,8 @@ from .status_icon import gps_status_icon
 
 class gps_status(app):
 
-    def __init__(self, bounds, config, display, name):
-        super().__init__(bounds, config, display, name)
+    def __init__(self, bounds, config, name):
+        super().__init__(bounds, config, name)
 
         self.gps_data = {}
         self.tpv = {}
@@ -39,7 +39,7 @@ class gps_status(app):
 
         ))
 
-        y = display.TOP_BAR_SIZE
+        y = bounds.y
 
         self.ui_element_values = {}
         self.ui_element_graphs = {}

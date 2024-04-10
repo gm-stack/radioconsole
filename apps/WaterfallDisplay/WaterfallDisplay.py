@@ -13,13 +13,16 @@ import crash_handler
 
 from AppManager.app import app
 
-from config_reader import cfg
-
 from . import turbo_colormap
 
 from util import stat_display
 
 class WaterfallDisplay(app):
+    default_config = {
+        "graph_height": 64,
+        "button_height": 48
+    }
+
     REL_BANDWIDTHS = {
         1200000: range(100000, 600001, 100000),
         600000: range(100000, 300001, 100000),
@@ -30,8 +33,8 @@ class WaterfallDisplay(app):
         18750: range(100000, 300001, 100000)
     }
 
-    def __init__(self, bounds, config, display, name):
-        super().__init__(bounds, config, display, name)
+    def __init__(self, bounds, config, name):
+        super().__init__(bounds, config, name)
 
         self.colourmap = [(int(c[0]*255), int(c[1]*255), int(c[2]*255)) for c in turbo_colormap.TURBO_COLORMAP_DATA]
 
@@ -42,11 +45,11 @@ class WaterfallDisplay(app):
 
         self.decimate_zoom = True
 
-        BUTTON_Y = cfg.display.DISPLAY_H - self.config.BUTTON_HEIGHT
+        BUTTON_Y = bounds.h - self.config.button_height
         self.button_zoom_in = pygame_gui.elements.UIButton(
             relative_rect=pygame.Rect(
                 0, BUTTON_Y,
-                128, self.config.BUTTON_HEIGHT
+                128, self.config.button_height
             ),
             text="Zoom In",
             manager=self.gui
@@ -54,25 +57,25 @@ class WaterfallDisplay(app):
         self.button_zoom_out = pygame_gui.elements.UIButton(
             relative_rect=pygame.Rect(
                 128, BUTTON_Y,
-                128, self.config.BUTTON_HEIGHT
+                128, self.config.button_height
             ),
             text="Zoom Out",
             manager=self.gui
         )
         self.button_absmode = pygame_gui.elements.UIButton(
             relative_rect=pygame.Rect(
-                cfg.display.DISPLAY_W - 128,
+                bounds.w - 128,
                 BUTTON_Y,
-                128, self.config.BUTTON_HEIGHT
+                128, self.config.button_height
             ),
             text="Relative Mode",
             manager=self.gui
         )
         self.button_zoommode = pygame_gui.elements.UIButton(
             relative_rect=pygame.Rect(
-                cfg.display.DISPLAY_W - 256,
+                bounds.w - 256,
                 BUTTON_Y,
-                128, self.config.BUTTON_HEIGHT
+                128, self.config.button_height
             ),
             text="FFT Zoom",
             manager=self.gui
@@ -84,7 +87,7 @@ class WaterfallDisplay(app):
         self.label_status = stat_display(
             relative_rect=pygame.Rect(
                 256 + 1, BUTTON_Y + 1,
-                cfg.display.DISPLAY_W - 512 - 2, self.config.BUTTON_HEIGHT/2 - 2
+                bounds.w - 512 - 2, self.config.button_height/2 - 2
             ),
             text='',
             manager=self.gui
@@ -92,22 +95,22 @@ class WaterfallDisplay(app):
 
         self.label_net_status = stat_display(
             relative_rect=pygame.Rect(
-                256 + 1, BUTTON_Y + 1 + self.config.BUTTON_HEIGHT/2,
-                cfg.display.DISPLAY_W - 512 - 2, self.config.BUTTON_HEIGHT/2 - 2
+                256 + 1, BUTTON_Y + 1 + self.config.button_height/2,
+                bounds.w - 512 - 2, self.config.button_height/2 - 2
             ),
             text='',
             manager=self.gui
         )
 
         self.X, self.Y, self.W, self.H = bounds
-        self.WF_Y = self.Y + self.config.GRAPH_HEIGHT
-        self.WF_H = self.H - self.config.GRAPH_HEIGHT - self.config.BUTTON_HEIGHT
+        self.WF_Y = self.Y + self.config.graph_height
+        self.WF_H = self.H - self.config.graph_height - self.config.button_height
 
         self.connected = False
         self.in_background = True
 
         self.waterfall_surf = surface.Surface((self.W, self.WF_H))
-        self.graph_surf = surface.Surface((self.W, self.config.GRAPH_HEIGHT))
+        self.graph_surf = surface.Surface((self.W, self.config.graph_height))
 
         self.num_fft_bins = None
         self.display_bandwidth = None
@@ -211,7 +214,7 @@ class WaterfallDisplay(app):
         screen.blit(text, (text_x, self.Y))
 
         if x > 0 and x < self.bounds.w:
-            pygame.draw.line(screen, line_colour, (x, self.Y + text_h), (x, self.Y + self.config.GRAPH_HEIGHT + self.WF_H))
+            pygame.draw.line(screen, line_colour, (x, self.Y + text_h), (x, self.Y + self.config.graph_height + self.WF_H))
 
     def fade(self):
         # this is too slow to use
@@ -230,12 +233,12 @@ class WaterfallDisplay(app):
         left_offset = int(self.bounds.w / 2) % pixels_25k
 
         for i in range(left_offset, self.bounds.w, pixels_25k):
-            pygame.draw.line(self.graph_surf, (64, 64, 64), (i, 0), (i, self.config.GRAPH_HEIGHT))
+            pygame.draw.line(self.graph_surf, (64, 64, 64), (i, 0), (i, self.config.graph_height))
 
         for i, j in zip(range(self.W), range(1, self.W)):
             try:
-                this_y = self.config.GRAPH_HEIGHT - int(fft[i] * float(self.config.GRAPH_HEIGHT) / 255.0)
-                next_y = self.config.GRAPH_HEIGHT - int(fft[j] * float(self.config.GRAPH_HEIGHT) / 255.0)
+                this_y = self.config.graph_height - int(fft[i] * float(self.config.graph_height) / 255.0)
+                next_y = self.config.graph_height - int(fft[j] * float(self.config.graph_height) / 255.0)
             except OverflowError:
                 continue
             pygame.draw.line(self.graph_surf, (0, 255, 0), (i, this_y), (j, next_y))
@@ -245,7 +248,7 @@ class WaterfallDisplay(app):
         screen.blit(
             self.graph_surf,
             (self.X, self.Y),
-            area=(0, 0, self.W, self.config.GRAPH_HEIGHT)
+            area=(0, 0, self.W, self.config.graph_height)
         )
 
     def set_net_status(self, status):
@@ -283,7 +286,7 @@ class WaterfallDisplay(app):
                 try:
                     print("Connecting")
                     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                    s.connect((self.config.HOST, self.config.PORT))
+                    s.connect((self.config.host, self.config.port))
                     self.set_net_status('Connected')
                     self.connected = True
                     self.socket = s

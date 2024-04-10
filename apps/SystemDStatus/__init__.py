@@ -23,23 +23,19 @@ class SystemDStatus(LogViewer):
 
     data_updated = False
 
-    def __init__(self, bounds, config, display, name):
-        log_viewer_cfg = types.SimpleNamespace(
-            username=config.username,
-            host=config.host,
-            port=config.port,
-            retry_seconds=5,
-            command='',
-            commands=[],
-            command_button_h=0,
-            command_buttons_x=1,
-            command_button_margin=0
-        )
+    def __init__(self, bounds, config, name):
+        log_viewer_cfg = super().default_config.copy()
+        log_viewer_cfg.update({
+            "username": config.username,
+            "host": config.host,
+            "port": config.port
+        })
+        cfg = types.SimpleNamespace(**log_viewer_cfg)
 
-        super().__init__(bounds, log_viewer_cfg, display, f"{name}_logviewer")
+        super().__init__(bounds, cfg, f"{name}_logviewer")
         self.config = config
 
-        y_off = display.TOP_BAR_SIZE
+        y_off = bounds.y
         x = 0
 
         self.status_icon = systemd_status_icon()
@@ -123,7 +119,7 @@ class SystemDStatus(LogViewer):
                 colourmap_mode='equals'
             )
 
-            if (x + 400) >= display.DISPLAY_W:
+            if (x + 400) >= bounds.w:
                 y_off += 74
                 x = 0
             else:
@@ -145,9 +141,10 @@ class SystemDStatus(LogViewer):
         self.remaining_bounds = pygame.Rect(
             0,
             y_off,
-            cfg.display.DISPLAY_W,
-            cfg.display.DISPLAY_H - y_off
+            bounds.w,
+            bounds.h - (y_off - bounds.y)
         )
+        print(self.remaining_bounds)
         # resize terminal view down to cover only 
         # remaining space, as it inited fullscreen
         self.terminal_view.set_bounds(self.remaining_bounds)

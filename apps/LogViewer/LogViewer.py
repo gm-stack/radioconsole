@@ -5,6 +5,7 @@ import time
 import socket
 import select
 import ctypes
+import re
 
 import pygame
 import pygame_gui
@@ -18,13 +19,27 @@ from ..common import TerminalView, SSHBackgroundThreadApp
 
 class LogViewer(SSHBackgroundThreadApp):
 
-    def __init__(self, bounds, config, display, name):
-        super().__init__(bounds, config, display, name)
+    default_config = {
+        "retry_seconds": 5,
+        "max_scrollback": 50000,
+        "command_button_h": 48,
+        "command_buttons_x": 0,
+        "command_button_margin": 2,
+        "filter_lines": [],
+        "commands": [],
+        "command": None
+    }
+
+    def __init__(self, bounds, config, name):
+        super().__init__(bounds, config, name)
 
         # store this elsewhere as we may be subclassed and configured differently
         self.logviewer_config = config
 
         self.command_buttons = {}
+
+        if config.command_buttons_x == 0:
+            config.command_buttons_x = len(self.config.commands)
 
         def createCommandButton(command_name):
             total_padding = (config.command_buttons_x + 1) * config.command_button_margin
@@ -45,11 +60,14 @@ class LogViewer(SSHBackgroundThreadApp):
                 manager=self.gui
             )
 
-        for command_name in config.commands:
-            createCommandButton(command_name)
+        if config.commands:
+            for command_name in config.commands:
+                createCommandButton(command_name)
 
-        buttons_h = (config.command_button_h + config.command_button_margin) * \
-            int(math.ceil(len(config.commands) / config.command_buttons_x))
+            buttons_h = (config.command_button_h + config.command_button_margin) * \
+                int(math.ceil(len(config.commands) / config.command_buttons_x))
+        else:
+            buttons_h = 0
 
         self.terminal_view = TerminalView(
             pygame.Rect(
@@ -61,14 +79,22 @@ class LogViewer(SSHBackgroundThreadApp):
             name=self.name
         )
 
+        self.regex_list = []
+        print(self.config)
+        for f in self.config.filter_lines:
+            try:
+                self.regex_list.append(re.compile(f))
+            except re.error as e:
+                print(f"Error compiling regex: '{f}'")
+                raise e
+
         self.prev_tail_command = None
 
         if self.logviewer_config.command:
             self.status_message(f"ssh {self.logviewer_config.username}@{self.logviewer_config.host}:{self.logviewer_config.port}\n")
             self.set_tail_command(self.logviewer_config.command)
 
-    def display_filter(self, msg):
-        # TODO: implement
+    def filter(self, msg):
         return msg
 
     def status_message(self, text):
@@ -80,8 +106,10 @@ class LogViewer(SSHBackgroundThreadApp):
         self.data_updated = True
 
     def console_message(self, text):
-        self.terminal_view.write(text, colour='white')
-        self.data_updated = True
+        text = self.filter(text)
+        if text:
+            self.terminal_view.write(text, colour='white')
+            self.data_updated = True
 
     def console_message_onceonly(self, text):
         self.terminal_view.write(text, colour='brightwhite')
@@ -103,7 +131,7 @@ class LogViewer(SSHBackgroundThreadApp):
             ch.exec_command(command)
 
             while True:
-                out = stdout.channel.recv(1024)
+                out = stdout.readline()
                 if not out:
                     break
                 else:

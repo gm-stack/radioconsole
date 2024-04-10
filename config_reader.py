@@ -27,7 +27,7 @@ class cfg:
         modules[m['display_name']] = SimpleNamespace(
             type=m['type'],
             display_name=m['display_name'],
-            config=SimpleNamespace(**m['config'])
+            config=m['config']
         )
     theme_file = theme.name
     theme = _config['theme']
