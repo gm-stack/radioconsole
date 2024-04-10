@@ -17,6 +17,10 @@ class RaspiStatus(SSHBackgroundThreadApp):
     ui_element_graphs = {}
     cpu_graph_y = {}
 
+    default_config = {
+        "refresh_seconds": 1
+    }
+
     host_defaults = {
         "port": 22,
         "username": "pi"
@@ -39,7 +43,7 @@ class RaspiStatus(SSHBackgroundThreadApp):
                 relative_rect=pygame.Rect(0, y, 800, 32),
                 text='', manager=self.gui
             )
-            y += config.line_height
+            y += 32
 
             for ui_element, unit in {'frequency': '', 'cpu_temp': "\N{DEGREE SIGN}C", 'free_mem': 'MB'}.items():
                 self.ui_element_graphs[host][ui_element] = stat_view_graph(
@@ -49,7 +53,7 @@ class RaspiStatus(SSHBackgroundThreadApp):
                     manager=self.gui,
                     unit=unit
                 )
-                y += config.line_height
+                y += 32
 
             for i, ui_element in enumerate(['undervolt', 'freqcap', 'throttled', 'templimit']):
                 self.ui_element_values[host][ui_element] = stat_view(
@@ -73,7 +77,7 @@ class RaspiStatus(SSHBackgroundThreadApp):
             )
             self.cpu_graph_y[host] = y
 
-            y += config.line_height * 2.5
+            y += 80
 
         self.data = {}
         self.host_updated = {host['host']: True for host in self.config.hosts}
