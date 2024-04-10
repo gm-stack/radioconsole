@@ -184,9 +184,9 @@ class SystemDStatus(LogViewer):
                 
             icon = None
             if activating > 0:
-                icon = 'orangealert'
+                icon = 'warning_orange'
             if errored > 0 or self.no_data:
-                icon = 'redalert'
+                icon = 'warning_red'
 
             self.status_icon.update(count, running, errored, icon=icon)
             self.status_icons_updated = True
@@ -194,7 +194,7 @@ class SystemDStatus(LogViewer):
     
     def no_data_update_for(self, data_for, sec_since):
         self.service_status = {}
-        self.status_icon.update(0,0,0, icon='redalert')
+        self.status_icon.update(0,0,0, icon='warning_red')
         self.status_icons_updated = True
         self.no_data = True
 

@@ -151,17 +151,17 @@ class lte_status(app):
             try:
                 self.data = self.backend.fetch_stats()
                 if not self.data.get('mode', ''):
-                    icon = 'orangealert'
+                    icon = 'warning_orange'
                     
             except requests.exceptions.RequestException as e:
                 try:
                     errargs = e.args[0].reason.args
                     err = errargs[0] if type(errargs[0]) is str else errargs[1]
                     self.data = {'mode': err.split(':')[-1]}
-                    icon = 'redalert'
+                    icon = 'warning_red'
                 except:
                     self.data = {'mode': str(e)}
-                    icon = 'redalert'
+                    icon = 'warning_red'
             self.data_updated = True
             self.status_icon.update(self.data, icon)
             self.status_icons_updated = True

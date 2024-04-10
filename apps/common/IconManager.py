@@ -6,17 +6,26 @@ radioconsole_icons = {
     'satellite': pygame.image.load("apps/common/satellite.png"),
     'signal': pygame.image.load("apps/common/signal.png"),
     'services': pygame.image.load("apps/common/services.png"),
+    'gps_satellite': pygame.image.load("apps/common/gps_satellite.png"),
 }
-            
-radioconsole_icons['redalert'] = radioconsole_icons['warning'].copy()
-radioconsole_icons['redalert'].fill((255,0,0,255), None, pygame.BLEND_MULT)
 
-radioconsole_icons['orangealert'] = radioconsole_icons['warning'].copy()
-radioconsole_icons['orangealert'].fill((255,165,0,255), None, pygame.BLEND_MULT)
+def colour_image(image, colour, colourname):
+    radioconsole_icons[f'{image}_{colourname}'] = radioconsole_icons[image].copy()
+    radioconsole_icons[f'{image}_{colourname}'].fill(colour, None, pygame.BLEND_MULT) 
+
+colour_image('warning', (255,0,0,255), 'red')
+colour_image('warning', (255,165,0,255), 'orange')
+
+colour_image('gps_satellite', (255,0,0,255), 'red')
+colour_image('gps_satellite', (0,255,0,255), 'green')
+colour_image('gps_satellite', (0,0,255,255), 'blue')
+colour_image('gps_satellite', (255,165,0,255), 'orange')
+colour_image('gps_satellite', (0,255,255,255), 'cyan')
+colour_image('gps_satellite', (255,0,255,255), 'magenta')
+colour_image('gps_satellite', (255,255,0,255), 'yellow')
 
 def darken_image(image):
-    radioconsole_icons[f'{image}_dark'] = radioconsole_icons[image].copy()
-    radioconsole_icons[f'{image}_dark'].fill((64,64,64,255), None, pygame.BLEND_MULT)
+    colour_image(image, (64,64,64,255), "dark")
 
 darken_image('raspberrypi')
 darken_image('satellite')

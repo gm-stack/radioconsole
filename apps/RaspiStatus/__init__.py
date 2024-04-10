@@ -170,9 +170,9 @@ class RaspiStatus(SSHBackgroundThreadApp):
                 data.update(self.parse_vc_throttle_status(data.get('throttled')))
 
                 if data.get('status',''):
-                    icon = 'redalert'
+                    icon = 'warning_red'
                 elif any([data.get(c) == "ALERT" for c in ['undervolt','freqcap','throttled','templimit']]):
-                    icon = 'orangealert'
+                    icon = 'warning_orange'
                 else:
                     icon = None
                 self.status_icon_classes[host].update(data, icon)

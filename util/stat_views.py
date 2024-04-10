@@ -6,13 +6,11 @@ from . import timegraph
 class stat_display(pygame_gui.elements.ui_label.UILabel):
     def __init__(self, *args, object_id='#param_value', **kwargs):
         kwargs['object_id'] = object_id
-        #kwargs['object_id'] = "#param_value"
         super().__init__(*args, **kwargs)
 
 class stat_label(pygame_gui.elements.ui_label.UILabel):
     def __init__(self, *args, object_id='#param_label', **kwargs):
         kwargs['object_id'] = object_id
-        #kwargs['object_id'] = "#param_label"
         super().__init__(*args, **kwargs)
 
 class stat_view(object):
