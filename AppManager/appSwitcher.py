@@ -71,19 +71,19 @@ class appSwitcher(object):
             app.update(dt)
 
     def createAppButton(self, appname):
-        total_padding = (cfg.switcher.BUTTONS_X + 1) * cfg.switcher.BUTTON_MARGIN
-        button_w = (cfg.display.DISPLAY_W - total_padding) // cfg.switcher.BUTTONS_X
+        total_padding = (cfg.switcher.buttons_x + 1) * cfg.switcher.button_margin
+        button_w = (cfg.display.display_w - total_padding) // cfg.switcher.buttons_x
         button_num = len(self.running_apps_buttons)
-        button_col = button_num % cfg.switcher.BUTTONS_X
-        button_row = button_num // cfg.switcher.BUTTONS_X
+        button_col = button_num % cfg.switcher.buttons_x
+        button_row = button_num // cfg.switcher.buttons_x
 
         self.running_apps_buttons[appname] = pygame_gui.elements.UIButton(
             relative_rect=pygame.Rect(
-                cfg.switcher.BUTTON_MARGIN + ((button_w + cfg.switcher.BUTTON_MARGIN) * button_col),
-                cfg.display.TOP_BAR_SIZE+4 + cfg.switcher.BUTTON_MARGIN + \
-                    ((cfg.switcher.BUTTON_H + cfg.switcher.BUTTON_MARGIN) * button_row),
+                cfg.switcher.button_margin + ((button_w + cfg.switcher.button_margin) * button_col),
+                cfg.display.top_bar_size+4 + cfg.switcher.button_margin + \
+                    ((cfg.switcher.button_h + cfg.switcher.button_margin) * button_row),
                 button_w,
-                cfg.switcher.BUTTON_H
+                cfg.switcher.button_h
             ),
             text=appname,
             manager=self.gui
@@ -105,8 +105,8 @@ class appSwitcher(object):
                 self.redraw = True
                 self.screen.blit(
                     self.logo,
-                    (cfg.display.DISPLAY_W - self.logo_size[0],
-                    cfg.display.DISPLAY_H - self.logo_size[1])
+                    (cfg.display.display_w - self.logo_size[0],
+                    cfg.display.display_h - self.logo_size[1])
                 )
             else:
                 self.running_apps[self.FRONTMOST_APP].had_event = True

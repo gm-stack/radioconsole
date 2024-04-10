@@ -55,7 +55,7 @@ try:
 
     clock = pygame.time.Clock()
     while True:
-        time_delta = clock.tick(cfg.display.TARGET_FPS)/1000.0
+        time_delta = clock.tick(cfg.display.target_fps)/1000.0
         for e in pygame.event.get():
             if e.type is pygame.QUIT:
                 safe_exit()

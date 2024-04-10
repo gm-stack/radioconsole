@@ -1,0 +1,113 @@
+defaults:
+  colours:
+    normal_bg: "#4c5052"
+    hovered_bg: "#63686b"
+    disabled_bg: "#25292e"
+    selected_bg: "#365880"
+    active_bg: "#365880"
+    dark_bg: "#21282d"
+    disabled_dark_bg: "#181818"
+    normal_text: "#bbbbbb"
+    hovered_text: "#bbbbbb"
+    disabled_text: "#808080"
+    selected_text: "#bbbbbb"
+    active_text: "#bbbbbb"
+    normal_border: "#5c6062"
+    hovered_border: "#73787b"
+    disabled_border: "#35393e"
+    selected_border: "#466890"
+    active_border: "#466890"
+    link_text: "#6897bb"
+    link_hover: "#84bfed"
+    link_selected: "#84bfed"
+    text_shadow: "#777777"
+    filled_bar: "#f4251b"
+    unfilled_bar: "#CCCCCC"
+  font:
+    name: "B612"
+    size: 14
+button:
+  colours:
+    normal_bg: "#4c5052,#3c4042,90"
+    normal_text_shadow: "#000000"
+    dark_bg: "#21282d,#11181d,90"
+    disabled_dark_bg: "#181818"
+    normal_text: "#cccccc"
+  font:
+    name: "B612"
+    size: 16
+    regular_path: "ttf/B612-Regular.ttf"
+label:
+  colours:
+    dark_bg: "#21282d,#11181d,90"
+  font:
+    name: "B612"
+    size: 14
+    regular_path: "ttf/B612-Regular.ttf"
+'#param_label':
+  colours:
+    normal_text: "#FF00FF"
+    dark_bg: "#151D22"
+  font:
+    name: "B612Mono"
+    size: 14
+    bold: 1
+    regular_path: "ttf/B612Mono-Regular.ttf"
+    bold_path: "ttf/B612Mono-Bold.ttf"
+'#param_label_top':
+  prototype: '#param_label'
+  colours:
+    dark_bg: "#11181d,#01080d,90"
+'#param_label_top_lighter':
+  prototype: '#param_label'
+  colours:
+    dark_bg: "#11181d,#21282d,90"
+'#param_label_vert':
+  prototype: '#param_label'
+  colours:
+    dark_bg: "#21282d,#11181d,90"
+'#param_label_horz':
+  prototype: '#param_label'
+  colours:
+    dark_bg: "#21282d,#11181d,0"
+'#param_value':
+  colours:
+    normal_text: "#bbbbbb"
+    dark_bg: "#11181d"
+  font:
+    name: "B612Mono"
+    size: 14
+    bold: 0
+    regular_path: "ttf/B612Mono-Regular.ttf"
+'#param_value_vert':
+  prototype: '#param_value'
+  colours:
+    dark_bg: "#21282d,#11181d,90"
+'#param_value_horz':
+  prototype: '#param_value'
+  colours:
+    dark_bg: "#21282d,#11181d,0"
+'#gnss_label_GP':
+  prototype: '#param_label_vert'
+  colours:
+    normal_text: "#CCCCCC"
+'#gnss_label_SB':
+  prototype: '#param_label_vert'
+  colours:
+    normal_text: "#CCCC00"
+'#gnss_label_GA':
+  prototype: '#param_label_vert'
+  colours:
+    normal_text: "#00CCCC"
+'#gnss_label_BD':
+  prototype: '#param_label_vert'
+  colours:
+    normal_text: "#CC0000"
+'#gnss_label_QZ':
+  prototype: '#param_label_vert'
+  colours:
+    normal_text: "#00CC00"
+'#gnss_label_GL':
+  prototype: '#param_label_vert'
+  colours:
+    normal_text: "#CC8400"

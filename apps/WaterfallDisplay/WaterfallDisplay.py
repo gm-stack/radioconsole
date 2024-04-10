@@ -45,7 +45,7 @@ class WaterfallDisplay(app):
 
         self.decimate_zoom = True
 
-        BUTTON_Y = bounds.h - self.config.button_height
+        BUTTON_Y = (bounds.h + bounds.y) - self.config.button_height
         self.button_zoom_in = pygame_gui.elements.UIButton(
             relative_rect=pygame.Rect(
                 0, BUTTON_Y,

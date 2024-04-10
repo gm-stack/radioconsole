@@ -20,6 +20,8 @@ from ..common import TerminalView, SSHBackgroundThreadApp
 class LogViewer(SSHBackgroundThreadApp):
 
     default_config = {
+        "port": 22,
+        "username": "pi",
         "retry_seconds": 5,
         "max_scrollback": 50000,
         "command_button_h": 48,
@@ -80,7 +82,6 @@ class LogViewer(SSHBackgroundThreadApp):
         )
 
         self.regex_list = []
-        print(self.config)
         for f in self.config.filter_lines:
             try:
                 self.regex_list.append(re.compile(f))
@@ -95,6 +96,10 @@ class LogViewer(SSHBackgroundThreadApp):
             self.set_tail_command(self.logviewer_config.command)
 
     def filter(self, msg):
+        for r in self.regex_list:
+            if r.search(msg):
+                print(f"filtering line '{msg}' due to '{r}'")
+                return
         return msg
 
     def status_message(self, text):

@@ -14,6 +14,9 @@ from util import timegraph, stat_display, stat_label, stat_view, stat_view_graph
 from .status_icon import gps_status_icon
 
 class gps_status(app):
+    default_config = {
+        "port": 2947
+    }
 
     def __init__(self, bounds, config, name):
         super().__init__(bounds, config, name)

@@ -25,16 +25,14 @@ class appManager(object):
             app_class = self.available_apps[appcfg.type]
             
             instance_config = app_class.default_config.copy()
-            print("default", instance_config)
             instance_config.update(appcfg.config)
-            print("instance", instance_config)
 
             app = app_class(
                 bounds=pygame.Rect(
                     0,
-                    cfg.display.TOP_BAR_SIZE,
-                    cfg.display.DISPLAY_W,
-                    cfg.display.DISPLAY_H - cfg.display.TOP_BAR_SIZE
+                    cfg.display.top_bar_size,
+                    cfg.display.display_w,
+                    cfg.display.display_h - cfg.display.top_bar_size
                 ),
                 config=SimpleNamespace(**instance_config),
                 name=appname

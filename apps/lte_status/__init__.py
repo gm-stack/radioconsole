@@ -15,6 +15,10 @@ from .status_icon import lte_status_icon
 from ..common import TerminalView
 
 class lte_status(app):
+    default_config = {
+        "port": 80
+    }
+
     backend = None
     backend_thread = None
     ui_element_labels = {}

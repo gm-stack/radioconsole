@@ -17,6 +17,11 @@ class RaspiStatus(SSHBackgroundThreadApp):
     ui_element_graphs = {}
     cpu_graph_y = {}
 
+    host_defaults = {
+        "port": 22,
+        "username": "pi"
+    }
+
     def __init__(self, bounds, config, name):
         super().__init__(bounds, config, name)
 
@@ -76,21 +81,23 @@ class RaspiStatus(SSHBackgroundThreadApp):
         self.status_icon_classes = {}
 
         for host in self.config.hosts:
-            host_config = SimpleNamespace(**host)
-            create_ui(host_config.host)
-            self.data[host_config.host] = {}
+            host_cfg = self.host_defaults.copy()
+            host_cfg.update(host)
+            hostname = host_cfg['host']
+            create_ui(hostname)
+            self.data[hostname] = {}
             status_icon = raspi_status_icon()
-            self.status_icon_classes[host_config.host] = status_icon
+            self.status_icon_classes[hostname] = status_icon
             self.status_icons.append(status_icon.surface)
 
             self.run_ssh_func_persistent(
-                host_config,
-                host_config.host,
+                SimpleNamespace(**host_cfg),
+                hostname,
                 self.get_pi_status,
-                host
+                host_cfg
             )
             # first call starts watchdog
-            self.data_good(host_config.host)
+            self.data_good(hostname)
 
 
     def parse_vc_throttle_status(self, status):

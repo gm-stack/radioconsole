@@ -24,9 +24,9 @@ This is the least interesting screen, but it's the most important. This allows y
 ``` yaml
 system:
   switcher:
-    BUTTONS_X: 4      # how many columns of buttons
-    BUTTON_H: 64      # height in pixels
-    BUTTON_MARGIN: 2  # margin between buttons
+    buttons_x: 4      # how many columns of buttons
+    button_h: 64      # height in pixels
+    button_margin: 2  # margin between buttons
 ```
 
 ## Raspberry Pi Status
@@ -171,7 +171,7 @@ panadapter:
     PORT: 45362
     INVERTED: true # swap I/Q
     GRAPH_HEIGHT: 64
-    BUTTON_HEIGHT: 48
+    button_hEIGHT: 48
     RF_MIN: 0
     RF_MAX: 500
     SAMPLE_PROVIDER: rtlsdr

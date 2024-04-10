@@ -1,56 +1,38 @@
 system:
   display:
-    DISPLAY_W: 800
-    DISPLAY_H: 480
-    TOP_BAR_SIZE: 64
-    TOP_BAR_APP_LABEL_WIDTH: 192
-    TARGET_FPS: 60
-  switcher:
-    BUTTONS_X: 4
-    BUTTON_H: 64
-    BUTTON_MARGIN: 2
+    display_w: 800
+    display_h: 480
 
 modules:
   panadapter:
     type: rtl_fft
     display_name: panadapter
     config:
-      GRAPH_HEIGHT: 64
-      BUTTON_HEIGHT: 48
-      HOST: 172.17.0.2
-      PORT: 45362
+      host: 172.17.0.3
+      port: 45362
   
   gpsd:
     type: gpsd
     display_name: GPS Status
     config:
-      host: 172.17.0.2
-      port: 2947
+      host: 172.17.0.3
     
   modem:
     type: lte_status
     display_name: 4G Status
     config:
       backend: rooter
-      line_height: 32
       host: 172.17.0.254
-      port: 80
       username: root
       password: example
 
   logviewer:
-    type: log_viewer
+    type: systemd_log_viewer
     display_name: Radioconsole Logs
     config:
-      host: 127.0.0.1
-      username: pi
-      port: 22
-      command: journalctl -f -n 100 -u radioconsole.service --no-hostname
-      retry_seconds: 5
-      max_scrollback: 50000
-      command_buttons_x: 5
-      command_button_h: 48
-      command_button_margin: 2
+      host: 172.17.0.185
+      services:
+        - radioconsole
       commands:
         restart: sudo service radioconsole restart
         update: cd radioconsole; git pull
@@ -59,20 +41,16 @@ modules:
         reboot: sudo reboot
   
   carpi_logs:
-    type: log_viewer
+    type: systemd_log_viewer
     display_name: CarPi Logs
     config:
       host: 172.17.0.3
-      username: pi
-      port: 22
-      command: >-
-        journalctl -f -n 100 -u waterfall_server.service -u auto_rx.service -u direwolf.service --no-hostname 
-        | grep --line-buffered -v -e "Can't get address for IGate server"
-      retry_seconds: 5
-      max_scrollback: 50000
-      command_buttons_x: 6
-      command_button_h: 48
-      command_button_margin: 2
+      services:
+        - waterfall_server
+        - auto_rx
+        - direwolf
+      filter_lines:
+        - "Can't get address for IGate server"
       commands:
         dw_start: sudo service direwolf start
         dw_stop: sudo service direwolf stop
@@ -82,18 +60,12 @@ modules:
         wf_restart: sudo service waterfall_server restart
     
   carpi_power:
-    type: log_viewer
+    type: systemd_log_viewer
     display_name: CarPi Power
     config:
       host: 172.17.0.3
-      username: pi
-      port: 22
-      command: journalctl -f -n 100 -u gpio_shutdown.service --no-hostname
-      retry_seconds: 5
-      max_scrollback: 50000
-      command_buttons_x: 4
-      command_button_h: 48
-      command_button_margin: 2
+      services:
+        - gpio_shutdown
       commands:
         gpio_shutdown_start: sudo service gpio_shutdown start
         gpio_shutdown_stop: sudo service gpio_shutdown stop
@@ -105,14 +77,7 @@ modules:
     display_name: CarPi dmesg
     config:
       host: 172.17.0.3
-      username: pi
-      port: 22
       command: journalctl -f -n 100 --dmesg --no-hostname
-      retry_seconds: 5
-      max_scrollback: 50000
-      command_buttons_x: 2
-      command_button_h: 48
-      command_button_margin: 2
       commands:
         lsusb: lsusb -t
         reboot: sudo reboot
@@ -124,57 +89,46 @@ modules:
       refresh_seconds: 1
       line_height: 32
       hosts:
-        - host: 127.0.0.1
-          username: pi
-          port: 22
+        - host: 172.17.0.185
         - host: 172.17.0.3
-          username: pi
-          port: 22
-  
+          
   winlink:
-    type: log_viewer
+    type: systemd_log_viewer
     display_name: WinLink controls
     config:
       host: 172.17.0.3
-      username: pi
-      port: 22
-      command: >-
-        journalctl -f -n 100 -u pat.service -u ardopc.service -u rigctld.service --no-hostname | grep --line-buffered -v 
-        -e 'Main.KeyPTT'
-        -e 'Input peaks'
-        -e 'Acquire2ToneLeaderSymbolFraming'
-        -e 'Frame Decode type'
-        -e 'poor frame type decode'
-        -e 'Frame Type Decode Fail'
-        -e 'Time since received'
-        -e 'EnvelopeCorrelator'
-        -e 'Acquire2ToneLeaderSymbolFraming'
-        -e 'Frame Type Decode'
-        -e 'ComputeQualityAvg'
-        -e 'Prior-Offset'
-        -e 'MEMARQ Flags'
-      retry_seconds: 5
-      max_scrollback: 50000
-      command_buttons_x: 2
-      command_button_h: 48
-      command_button_margin: 2
+      services:
+        - pat
+        - ardopc
+        - rigctld
+      filter_lines:
+        - 'Main.KeyPTT'
+        - 'Input peaks'
+        - 'Acquire2ToneLeaderSymbolFraming'
+        - 'Frame Decode type'
+        - 'poor frame type decode'
+        - 'Frame Type Decode Fail'
+        - 'Time since received'
+        - 'EnvelopeCorrelator'
+        - 'Acquire2ToneLeaderSymbolFraming'
+        - 'Frame Type Decode'
+        - 'ComputeQualityAvg'
+        - 'Prior-Offset'
+        - 'MEMARQ Flags'
       commands:
         start_winlink: sudo service waterfall_server stop; sudo /root/USBPacket.sh; sudo service ardopc start; sudo service rigctld start
         stop_winlink: sudo service ardopc stop; sudo service rigctld stop; sudo /root/USBVoice.sh; sudo service waterfall_server start
 
+
   direwolf_config:
-    type: log_viewer
+    type: systemd_log_viewer
     display_name: DireWolf config
     config:
       host: 172.17.0.3
-      username: pi
-      port: 22
-      command: journalctl -f -n 100 -u direwolf.service -u direwolf-digi.service --no-hostname
-      retry_seconds: 5
-      max_scrollback: 50000
-      command_buttons_x: 4
-      command_button_h: 48
-      command_button_margin: 2
+      services:
+        - direwolf
+        - direwolf-digi
+      show_service_name: False
       commands:
         digipeter_mode: sudo service waterfall_server stop; sudo service gpio_shutdown stop; sudo service direwolf stop; sudo /root/FMPacket.sh; sudo service direwolf-digi start; sudo service waterfall_server start
         beacon_mode: sudo service waterfall_server stop;sudo service gpio_shutdown start; sudo service direwolf-digi stop; sudo /root/USBVoice.sh; sudo service direwolf start; sudo service waterfall_server start
@@ -185,15 +139,7 @@ modules:
     type: log_viewer
     display_name: Display config
     config:
-      host: 127.0.0.1
-      username: pi
-      port: 22
-      command: cat
-      retry_seconds: 5
-      max_scrollback: 10000
-      command_buttons_x: 8
-      command_button_h: 48
-      command_button_margin: 2
+      host: 172.17.0.185
       commands:
        '32': sudo sh -c 'echo 32 > /sys/class/backlight/rpi_backlight/brightness'
        '64': sudo sh -c 'echo 64 > /sys/class/backlight/rpi_backlight/brightness'
@@ -208,11 +154,7 @@ modules:
     type: systemd_status
     display_name: "CarPi services"
     config:
-      host: carpi.zerotier
-      username: pi
-      port: 22
-      line_height: 32
-      retry_seconds: 10
+      host: 172.17.0.3
       services:
         - freeselcall
         - direwolf
@@ -221,6 +163,7 @@ modules:
         - ardopc
         - auto_rx
         - chasemapper
+        #- lightdm
         - pat
 
 waterfall_server:
@@ -229,94 +172,3 @@ waterfall_server:
   if_freq: 124488500 # 124487000 + 1500
   sample_rate: 1200000
   output_path: /dev/shm/
-
-theme:
-  defaults:
-    colours:
-      normal_bg: "#4c5052"
-      hovered_bg: "#63686b"
-      disabled_bg: "#25292e"
-      selected_bg: "#365880"
-      active_bg: "#365880"
-      dark_bg: "#21282d"
-      disabled_dark_bg: "#181818"
-      normal_text: "#bbbbbb"
-      hovered_text: "#bbbbbb"
-      disabled_text: "#808080"
-      selected_text: "#bbbbbb"
-      active_text: "#bbbbbb"
-      normal_border: "#5c6062"
-      hovered_border: "#73787b"
-      disabled_border: "#35393e"
-      selected_border: "#466890"
-      active_border: "#466890"
-      link_text: "#6897bb"
-      link_hover: "#84bfed"
-      link_selected: "#84bfed"
-      text_shadow: "#777777"
-      filled_bar: "#f4251b"
-      unfilled_bar: "#CCCCCC"
-    font:
-      name: "B612"
-      size: 14
-  button:
-    colours:
-      normal_bg: "#4c5052,#3c4042,90"
-      normal_text_shadow: "#000000"
-      dark_bg: "#21282d,#11181d,90"
-      disabled_dark_bg: "#181818"
-      normal_text: "#cccccc"
-    font:
-      name: "B612"
-      size: 16
-      regular_path: "ttf/B612-Regular.ttf"
-  label:
-    colours:
-      dark_bg: "#21282d,#11181d,90"
-    font:
-      name: "B612"
-      size: 14
-      regular_path: "ttf/B612-Regular.ttf"
-  '#param_label':
-    colours:
-      normal_text: "#FF00FF"
-      dark_bg: "#151D22"
-    font:
-      name: "B612Mono"
-      size: 14
-      bold: 1
-      regular_path: "ttf/B612Mono-Regular.ttf"
-      bold_path: "ttf/B612Mono-Bold.ttf"
-  '#param_label_top':
-    prototype: '#param_label'
-    colours:
-      dark_bg: "#11181d,#01080d,90"
-  '#param_label_top_lighter':
-    prototype: '#param_label'
-    colours:
-      dark_bg: "#11181d,#21282d,90"
-  '#param_label_vert':
-    prototype: '#param_label'
-    colours:
-      dark_bg: "#21282d,#11181d,90"
-  '#param_label_horz':
-    prototype: '#param_label'
-    colours:
-      dark_bg: "#21282d,#11181d,0"
-  '#param_value':
-    colours:
-      normal_text: "#bbbbbb"
-      dark_bg: "#11181d"
-    font:
-      name: "B612Mono"
-      size: 14
-      bold: 0
-      regular_path: "ttf/B612Mono-Regular.ttf"
-  '#param_value_vert':
-    prototype: '#param_value'
-    colours:
-      dark_bg: "#21282d,#11181d,90"
-  '#param_value_horz':
-    prototype: '#param_value'
-    colours:
-      dark_bg: "#21282d,#11181d,0"

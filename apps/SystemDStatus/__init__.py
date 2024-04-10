@@ -16,6 +16,12 @@ from .status_icon import systemd_status_icon
 from ..LogViewer import LogViewer
 
 class SystemDStatus(LogViewer):
+    default_config = {
+        "retry_seconds": 30,
+        "username": "pi",
+        "port": 22
+    }
+
     service_status = {}
     ui_element_values = {}
     ui_element_start_stop_buttons = {}
@@ -144,7 +150,6 @@ class SystemDStatus(LogViewer):
             bounds.w,
             bounds.h - (y_off - bounds.y)
         )
-        print(self.remaining_bounds)
         # resize terminal view down to cover only 
         # remaining space, as it inited fullscreen
         self.terminal_view.set_bounds(self.remaining_bounds)
