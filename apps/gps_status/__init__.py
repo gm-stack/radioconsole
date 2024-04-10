@@ -67,11 +67,15 @@ class gps_status(app):
                 manager=self.gui
             )
             y += 32
-            self.ui_element_values[f"gnss_{gnss_id}"] = stat_display(
-                relative_rect=pygame.Rect(0, y, 400, 32),
-                text='',
-                manager=self.gui
-            )
+            self.ui_element_values[f"gnss_{gnss_id}"] = []
+            num_elements = 16
+            for i in range(num_elements):
+                elem_width = 400 / num_elements
+                self.ui_element_values[f"gnss_{gnss_id}"].append(stat_display(
+                    relative_rect=pygame.Rect(i*elem_width, y, elem_width, 32),
+                    text='',
+                    manager=self.gui
+                ))
             y += 32
 
         self.data_good()
@@ -192,8 +196,27 @@ class gps_status(app):
                     label_text = f"{gnss['prefix']}: {gnss['name']}: {used_label}"
                     self.ui_element_labels[f"gnss_{gnss_id}"].set_text(label_text)  
 
-                    sats_list = " ".join([self.sat_format_name(s) for s in sats])
-                    self.ui_element_values[f"gnss_{gnss_id}"].set_text(sats_list)
+                    # todo: colour and place (don't remove existing from box)
+                    ui_elements = self.ui_element_values[f"gnss_{gnss_id}"]
+                    for i, e in enumerate(ui_elements):
+                        if i < len(sats):
+                            sat = sats[i]
+                            e.set_text(str(sat['PRN'])[-2:])
+                            if sat['used']:
+                                signal = (sat['ss'] * 5) + 80
+                                if signal > 255:
+                                    signal = 255
+                                if signal < 0:
+                                    signal = 0
+                                # TODO: multiply by colour for constellation
+                                e.text_colour = (0x00,signal,0x00)
+                            else:
+                                e.text_colour = (0x66,0x66,0x66)
+                            if sat['health'] != 1:
+                                e.text_colour = (0xCC,0x00,0x00)
+                            e.rebuild()
+                        else:
+                            e.set_text('')                 
             else:
                 for gnss_id, gnss in GNSS_IDS.items():
                     # not in ui
@@ -201,7 +224,8 @@ class gps_status(app):
                     
                     label_text = f"{gnss['prefix']}: {gnss['name']}: 0/0"
                     self.ui_element_labels[f"gnss_{gnss_id}"].set_text(label_text)
-                    self.ui_element_values[f"gnss_{gnss_id}"].set_text('')
+                    for e in self.ui_element_values[f"gnss_{gnss_id}"]:
+                        e.set_text('')
 
 
         super().update(dt)
