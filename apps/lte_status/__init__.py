@@ -150,7 +150,8 @@ class lte_status(app):
             icon = None
             try:
                 self.data = self.backend.fetch_stats()
-                if not self.data.get('mode', ''):
+                mode = self.data.get('mode', '')
+                if mode in ("-", "") :
                     icon = 'warning_orange'
                     
             except requests.exceptions.RequestException as e:
