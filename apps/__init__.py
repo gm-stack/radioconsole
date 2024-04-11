@@ -6,3 +6,5 @@ from .LogViewer import SystemDLogViewer
 from .RaspiStatus import RaspiStatus
 from .SystemDStatus import SystemDStatus
 from .GPIOShutdown import GPIOShutdown
+from .ARDOPStatus import ARDOPStatus
+from .DirewolfStatus import DirewolfStatus

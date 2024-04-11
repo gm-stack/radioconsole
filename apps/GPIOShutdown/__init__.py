@@ -44,6 +44,7 @@ class GPIOShutdown(SystemDLogViewer):
         config.command_button_h = 48
         config.command_buttons_x = 4
         config.command_button_margin = 2
+        config.lookback = 100
 
         self.shutdown_timer_running = False
         self.shutdown_timer = -1.0
@@ -56,8 +57,6 @@ class GPIOShutdown(SystemDLogViewer):
 
         stat_loc = pygame.Rect((0,0),(bounds.w,125))
         stat_loc.midtop = (bounds.w/2,bounds.y)
-
-        print(stat_loc)
 
         self.countdown = stat_display(
                     object_id="#countdown",

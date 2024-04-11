@@ -112,6 +112,17 @@ modules:
         start_winlink: sudo service waterfall_server stop; sudo /root/USBPacket.sh; sudo service ardopc start; sudo service rigctld start
         stop_winlink: sudo service ardopc stop; sudo service rigctld stop; sudo /root/USBVoice.sh; sudo service waterfall_server start
 
+  ardop:
+    type: ardop_status
+    display_name: ARDOP Controls
+    config:
+      host: 172.17.0.3
+
+  direwolf:
+    type: direwolf_status
+    display_name: Direwolf Controls
+    config:
+      host: 172.17.0.3
 
   direwolf_config:
     type: systemd_log_viewer

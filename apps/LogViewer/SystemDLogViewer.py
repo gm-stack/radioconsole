@@ -8,9 +8,18 @@ class SystemDLogMessage(object):
     def __init__(self, msg, show_service_name):
         self.show_service_name = show_service_name
         self.msg_json = msg
+
+        try:
+            j = json.loads(self.msg_json).items()
+        except json.JSONDecodeError as e:
+            self.msg = SimpleNamespace(message=f"{str(e)}\n{self.msg_json}")
+            self.timestamp_str = ""
+            self.syslog_id = ""
+            return
+
         self.msg = SimpleNamespace(
             # remove __ from keys that start with it as it interfeces with SimpleNamespace
-            **{key.removeprefix("__").lower(): value for key,value in json.loads(self.msg_json).items()}
+            **{key.removeprefix("__").lower(): value for key,value in j}
         )
 
         self.timestamp = datetime.datetime.fromtimestamp(int(self.msg.realtime_timestamp) / 1000000)
@@ -33,6 +42,7 @@ class SystemDLogViewer(LogViewer):
     default_config = {
         "port": 22,
         "username": "pi",
+        "lookback": 100,
         "retry_seconds": 5,
         "max_scrollback": 50000,
         "command_button_h": 48,
@@ -44,7 +54,8 @@ class SystemDLogViewer(LogViewer):
     }
 
     def __init__(self, bounds, config, name):
-        config.command = "journalctl -f -n 100 --output json " \
+        lookback = config.lookback
+        config.command = f"journalctl -f -n {lookback} --output json " \
             + " ".join([f"-u {s}.service" for s in config.services])
 
         # if set, use it, else default to only showing service name if >1 service
