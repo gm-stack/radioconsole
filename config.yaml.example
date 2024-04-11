@@ -151,7 +151,7 @@ modules:
       services:
         - freeselcall
         - direwolf
-        - gpio_shutdown
+        - gpsd
         - waterfall_server
         - ardopc
         - auto_rx
