@@ -45,6 +45,7 @@ try:
     am.register_app('raspi_status', apps.RaspiStatus)
     am.register_app('systemd_status', apps.SystemDStatus)
     am.register_app('systemd_log_viewer', apps.SystemDLogViewer)
+    am.register_app('gpio_shutdown_status', apps.GPIOShutdown)
 
     splash.update_status("instantiating apps")
     am.instantiate_apps(splash.update_status)

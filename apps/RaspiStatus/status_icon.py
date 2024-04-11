@@ -13,16 +13,16 @@ class raspi_status_icon(status_icon):
         self.clear()
 
         host_text = self.font.render(data.get('hostname', ''), True, (255,255,255))
-        self.surface.blit(host_text, (0, 0))
+        self.surface.blit(host_text, host_text.get_rect(midtop=(30, 0)))
 
         # todo: colour text
         temp_num = data.get('temp_num')
         if temp_num:
             temp_text = self.font.render(f'{temp_num:.1f}\N{DEGREE SIGN}C', True, (255,255,255))
-            self.surface.blit(temp_text, (0, 16))
+            self.surface.blit(temp_text, temp_text.get_rect(midtop=(30, 16)))
 
         clock_text = self.font.render(data.get('freqdisp', '').split('/')[0], True, (255,255,255))
-        self.surface.blit(clock_text, (0, 32))
+        self.surface.blit(clock_text, clock_text.get_rect(midtop=(30, 32)))
 
         try:
             cpu_percent = float(data.get('cpu_all_percent', ''))
@@ -32,14 +32,14 @@ class raspi_status_icon(status_icon):
 
         self.overlay_icon = icon
         super().update()
-    
+
     def draw_cpu_bar(self, cpu):
         margin = 4
         bar_height = 6
 
         # 0..100 to 0..(60 - (margin*2) - 2)
         cpu = (cpu / 100.0) * (60 - (margin * 2) - 2)
-        
+
         # require it to be at least 2
         # to have some graph
         cpu = max(cpu, 2.0)

@@ -113,13 +113,13 @@ class LogViewer(SSHBackgroundThreadApp):
     def console_message(self, text):
         text = self.filter(text)
         if text:
-            self.terminal_view.write(text, colour='white')
+            self.terminal_view.write(str(text) + "\n", colour='white')
             self.data_updated = True
 
     def console_message_onceonly(self, text):
         self.terminal_view.write(text, colour='brightwhite')
         self.data_updated = True
-    
+
     def set_tail_command(self, command):
         if command == self.prev_tail_command:
             return
@@ -129,7 +129,7 @@ class LogViewer(SSHBackgroundThreadApp):
 
         def run_tail_command(ts, command):
             self.status_message(f"$ {command}\n")
-            
+
             ch = ts.open_session()
             ch.set_combine_stderr(True)
             stdout = ch.makefile('rb', -1)
@@ -154,7 +154,7 @@ class LogViewer(SSHBackgroundThreadApp):
             self.data_updated = True
 
         self.run_ssh_func_persistent(self.config, "tail", run_tail_command, command)
-    
+
     def run_button_command(self, command):
         self.status_message(f"\n---\n>>> {command}\n")
 

@@ -36,7 +36,7 @@ class TerminalView():
         self.terminal_x = 0
         self.terminal_y = 0
 
-        self.text_surf = surface.Surface((self.bounds.w, self.bounds.h))
+        self.text_surf = surface.Surface(self.bounds.size)
         self.text_surf.fill((0, 0, 0))
 
         self.current_colour = self.default_colour

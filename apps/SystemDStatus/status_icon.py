@@ -13,10 +13,10 @@ class systemd_status_icon(status_icon):
         self.clear()
 
         running_count = self.font.render(f"{running}/{total}", True, (255,255,255))
-        self.surface.blit(running_count, (30-(running_count.get_width()/2), 0))
+        self.surface.blit(running_count, running_count.get_rect(midtop=(30, 0)))
 
         errs_text = self.font.render(f"{errored} errs", True, (255,255,255))
-        self.surface.blit(errs_text, (30-(errs_text.get_width()/2), 20))
+        self.surface.blit(errs_text, errs_text.get_rect(midtop=(30, 20)))
 
         self.overlay_icon = icon
         super().update()

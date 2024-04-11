@@ -5,3 +5,4 @@ from .LogViewer import LogViewer
 from .LogViewer import SystemDLogViewer
 from .RaspiStatus import RaspiStatus
 from .SystemDStatus import SystemDStatus
+from .GPIOShutdown import GPIOShutdown

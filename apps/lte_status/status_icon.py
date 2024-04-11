@@ -13,9 +13,8 @@ class lte_status_icon(status_icon):
         self.clear()
 
         mode_text = self.font.render(data.get('mode', ''), True, (255,255,255))
-        self.surface.blit(mode_text, (4, 0))
+        self.surface.blit(mode_text, mode_text.get_rect(topleft=(4, 0)))
 
-        # todo: colour text
         try:
             rsrq = data.get('rsrq', '')
             rsrq = float(rsrq)
@@ -29,15 +28,15 @@ class lte_status_icon(status_icon):
                 colour = (255, 0, 0, 255)
 
             rsrq_text = self.font.render(data.get('rsrq', ''), True, colour)
-            self.surface.blit(rsrq_text, (4, 20))
+            self.surface.blit(rsrq_text, rsrq_text.get_rect(midtop=(30, 20)))
             self.draw_signal_bar(rsrq)
         except ValueError:
             pass
 
         if 'bands' in data:
             band_text = self.font.render(data['bands'][0]['band'], True, (255,255,255))
-            self.surface.blit(band_text, (56-band_text.get_width(), 0))
-        
+            self.surface.blit(band_text, mode_text.get_rect(topright=(60,0)))
+
         self.overlay_icon = icon
         super().update()
 
@@ -46,10 +45,10 @@ class lte_status_icon(status_icon):
         rsrq += 20.0
         rsrq = max(rsrq, 0.0)
         rsrq = min(rsrq, 20.0)
-        
+
         # 0..20 now 0..48
         rsrq *= 2.4
-        
+
         # require it to be at least 2
         # to have some graph
         rsrq = max(rsrq, 2.0)

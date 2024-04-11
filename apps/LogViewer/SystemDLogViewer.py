@@ -1,7 +1,33 @@
 import json
 import datetime
+from types import SimpleNamespace
 
 from . import LogViewer
+
+class SystemDLogMessage(object):
+    def __init__(self, msg, show_service_name):
+        self.show_service_name = show_service_name
+        self.msg_json = msg
+        self.msg = SimpleNamespace(
+            # remove __ from keys that start with it as it interfeces with SimpleNamespace
+            **{key.removeprefix("__"): value for key,value in json.loads(self.msg_json).items()}
+        )
+
+        self.timestamp = datetime.datetime.fromtimestamp(int(self.msg.REALTIME_TIMESTAMP) / 1000000)
+
+        if self.timestamp.date() == datetime.date.today():
+            self.timestamp_str = self.timestamp.strftime("%H:%M:%S")
+        else:
+            self.timestamp_str = self.timestamp.strftime("%Y-%m-%d %H:%M:%S")
+
+        if self.show_service_name:
+            self.syslog_id = f" {self.msg.SYSLOG_IDENTIFIER}[{self.msg._PID}]"
+        else:
+            self.syslog_id = ""
+
+    # str version that ends up on terminal
+    def __str__(self):
+        return f"{self.timestamp_str}{self.syslog_id}: {self.msg.MESSAGE}"
 
 class SystemDLogViewer(LogViewer):
     default_config = {
@@ -18,36 +44,23 @@ class SystemDLogViewer(LogViewer):
     }
 
     def __init__(self, bounds, config, name):
-        
+
         config.command = "journalctl -f -n 100 --output json " \
             + " ".join([f"-u {s}.service" for s in config.services])
-        
+
         # if set, use it, else default to only showing service name if >1 service
         if config.show_service_name in (True, False):
             self.show_service_name = config.show_service_name
         else:
             self.show_service_name = (len(config.services) > 1)
-        
+
         super().__init__(bounds, config, name)
-    
-    def filter(self, text):
-        log_msg = json.loads(text)
 
-        timestamp = datetime.datetime.fromtimestamp(int(log_msg['__REALTIME_TIMESTAMP']) / 1000000)
-        if timestamp.date() == datetime.date.today():
-            date_fmt = timestamp.strftime("%H:%M:%S")
-        else:
-            date_fmt = timestamp.strftime("%Y-%m-%d %H:%M:%S")
-        
-        if self.show_service_name:
-            syslog_id = f" {log_msg['SYSLOG_IDENTIFIER']}[{log_msg['_PID']}]"
-        else:
-            syslog_id = ""
-
-
-        out_msg = f"{date_fmt}{syslog_id}: {log_msg['MESSAGE']}\n"
-        
-        return super().filter(out_msg)
+    def filter(self, json_text):
+        out_msg = SystemDLogMessage(json_text, self.show_service_name)
+        # don't return actual out_msg, we want the JSON version if unfiltered
+        if super().filter(str(out_msg)):
+            return out_msg
 
     def update(self, dt):
         return super().update(dt)

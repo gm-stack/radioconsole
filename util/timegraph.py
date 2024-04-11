@@ -49,5 +49,5 @@ class timegraph(object):
 
 
     def draw(self, screen):
-        screen.blit(self.surface, (self.bounds.x, self.bounds.y))
+        screen.blit(self.surface, self.bounds.topleft)
 

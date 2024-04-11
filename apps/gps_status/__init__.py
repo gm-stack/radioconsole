@@ -39,7 +39,6 @@ class gps_status(app):
         self.gps_satview = gps_satview(pygame.Rect(
             self.bounds.x + 400, self.bounds.y,
             400, self.bounds.h
-
         ))
 
         y = bounds.y
@@ -59,7 +58,7 @@ class gps_status(app):
         for gnss_id, gnss in GNSS_IDS.items():
             # only used indoors in japan, don't bother
             if gnss['name'] == "IMES": continue
-            
+
             self.ui_element_labels[f"gnss_{gnss_id}"] = stat_label(
                 object_id=f"#gnss_label_{gnss['prefix']}",
                 relative_rect=pygame.Rect(0, y, 400, 32),
@@ -84,7 +83,7 @@ class gps_status(app):
         if self.backend_thread:
             print("terminating existing gps backend thread")
             ctypes.pythonapi.PyThreadState_SetAsyncExc(
-                ctypes.c_long(self.backend_thread.ident), 
+                ctypes.c_long(self.backend_thread.ident),
                 ctypes.py_object(SystemExit)
             )
 
@@ -186,15 +185,15 @@ class gps_status(app):
                 for gnss_id, gnss in GNSS_IDS.items():
                     # not in ui
                     if gnss['name'] == "IMES": continue
-                    
+
                     sats = [s for s in self.skydata if s['gnssid'] == gnss_id]
-                    
+
                     numsats = len(sats)
                     numused = len([s for s in sats if s['used']])
                     used_label = f"{numused}/{numsats}"
-                    
+
                     label_text = f"{gnss['prefix']}: {gnss['name']}: {used_label}"
-                    self.ui_element_labels[f"gnss_{gnss_id}"].set_text(label_text)  
+                    self.ui_element_labels[f"gnss_{gnss_id}"].set_text(label_text)
 
                     # todo: colour and place (don't remove existing from box)
                     ui_elements = self.ui_element_values[f"gnss_{gnss_id}"]
@@ -216,12 +215,12 @@ class gps_status(app):
                                 e.text_colour = (0xCC,0x00,0x00)
                             e.rebuild()
                         else:
-                            e.set_text('')                 
+                            e.set_text('')
             else:
                 for gnss_id, gnss in GNSS_IDS.items():
                     # not in ui
                     if gnss['name'] == "IMES": continue
-                    
+
                     label_text = f"{gnss['prefix']}: {gnss['name']}: 0/0"
                     self.ui_element_labels[f"gnss_{gnss_id}"].set_text(label_text)
                     for e in self.ui_element_values[f"gnss_{gnss_id}"]:
@@ -232,7 +231,7 @@ class gps_status(app):
 
     def no_data_update_for(self, data_for, sec_since):
         self.gps_data = {
-            'status': f"No GPS data received for {sec_since}s", 
+            'status': f"No GPS data received for {sec_since}s",
             'error': self.gps_data.get('error')
         }
         self.tpv = {}
