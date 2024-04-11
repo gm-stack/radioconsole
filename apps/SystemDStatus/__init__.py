@@ -150,7 +150,7 @@ class SystemDStatus(LogViewer):
             bounds.w,
             bounds.h - (y_off - bounds.y)
         )
-        # resize terminal view down to cover only 
+        # resize terminal view down to cover only
         # remaining space, as it inited fullscreen
         self.terminal_view.set_bounds(self.remaining_bounds)
 
@@ -170,9 +170,9 @@ class SystemDStatus(LogViewer):
                 self.ui_element_values[unit_name]['load'].set_text(service.get('load', ''))
                 self.ui_element_values[unit_name]['sub'].set_text(service.get('sub', ''))
                 self.ui_element_values[unit_name]['active'].set_text(service.get('active', ''))
-                
+
                 button_text = "Start" if service.get('active') in ('inactive', 'disabled', 'failed') else 'Stop'
-                [ button.set_text(button_text) 
+                [ button.set_text(button_text)
                     for button in self.ui_element_start_stop_buttons.keys()
                     if self.ui_element_start_stop_buttons[button] == unit_name ]
                 if service:
@@ -183,7 +183,7 @@ class SystemDStatus(LogViewer):
                     activating += 1
                 if service.get('active') == 'failed':
                     errored += 1
-                
+
             icon = None
             if activating > 0:
                 icon = 'warning_orange'
@@ -193,7 +193,7 @@ class SystemDStatus(LogViewer):
             self.status_icon.update(count, running, errored, icon=icon)
             self.status_icons_updated = True
         super().update(dt)
-    
+
     def no_data_update_for(self, data_for, sec_since):
         self.service_status = {}
         self.status_icon.update(0,0,0, icon='warning_red')
@@ -228,7 +228,7 @@ class SystemDStatus(LogViewer):
 
         list_units = run_command('systemctl list-units --type=service --all --output json --no-pager')
         units = json.loads(list_units)
-        
+
         list_unit_files = run_command('systemctl list-unit-files --type=service --all --output json --no-pager')
         unit_files = json.loads(list_unit_files)
 
@@ -248,10 +248,10 @@ class SystemDStatus(LogViewer):
                     }
                 else:
                     unit_details[service] = { "description": f"Unit {service} not found"}
-        
+
         prev_service_status = self.service_status
         self.service_status = unit_details
+        self.data_good("services", no_data_allowed_time=self.max_no_data_seconds)
+        self.no_data = False
         if prev_service_status != self.service_status:
             self.data_updated = True
-            self.data_good("services", no_data_allowed_time=self.max_no_data_seconds)
-            self.no_data = False
