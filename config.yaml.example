@@ -10,13 +10,13 @@ modules:
     config:
       host: 172.17.0.3
       port: 45362
-  
+
   gpsd:
     type: gpsd
     display_name: GPS Status
     config:
       host: 172.17.0.3
-    
+
   modem:
     type: lte_status
     display_name: 4G Status
@@ -39,7 +39,7 @@ modules:
         status: cd radioconsole; git status
         ifconfig: /sbin/ifconfig
         reboot: sudo reboot
-  
+
   carpi_logs:
     type: systemd_log_viewer
     display_name: CarPi Logs
@@ -58,19 +58,12 @@ modules:
         wf_start: sudo service waterfall_server start
         wf_stop: sudo service waterfall_server stop
         wf_restart: sudo service waterfall_server restart
-    
+
   carpi_power:
-    type: systemd_log_viewer
+    type: gpio_shutdown_status
     display_name: CarPi Power
     config:
       host: 172.17.0.3
-      services:
-        - gpio_shutdown
-      commands:
-        gpio_shutdown_start: sudo service gpio_shutdown start
-        gpio_shutdown_stop: sudo service gpio_shutdown stop
-        gpio_shutdown_status: sudo service gpio_shutdown status
-        reboot: sudo reboot
 
   carpi_dmesg:
     type: log_viewer
@@ -81,7 +74,7 @@ modules:
       commands:
         lsusb: lsusb -t
         reboot: sudo reboot
-  
+
   raspi_status:
     type: raspi_status
     display_name: Raspberry Pi Status
@@ -91,7 +84,7 @@ modules:
       hosts:
         - host: 172.17.0.185
         - host: 172.17.0.3
-          
+
   winlink:
     type: systemd_log_viewer
     display_name: WinLink controls
