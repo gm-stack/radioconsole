@@ -27,7 +27,7 @@ class SystemDLogMessage(object):
 
     # str version that ends up on terminal
     def __str__(self):
-        return f"{self.timestamp_str}{self.syslog_id}: {self.msg.message}"
+        return f"{self.timestamp_str}{self.syslog_id}: {self.msg.message}\n"
 
 class SystemDLogViewer(LogViewer):
     default_config = {

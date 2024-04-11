@@ -29,6 +29,7 @@ class TerminalView():
         self.default_colour = 'white'
         self.precache_font()
         self.set_bounds(bounds)
+        self.delayed_newline = False
 
     def set_bounds(self, bounds):
         self.bounds = bounds
@@ -82,6 +83,9 @@ class TerminalView():
         if colour:
             self.current_colour = colour
         for char in text:
+            if self.delayed_newline:
+                newline()
+                self.delayed_newline = False
             a = ord(char)
             if a >= 32 and a < 128: # text char
                 glyph = self.precache_list[char][self.current_colour]
@@ -92,7 +96,12 @@ class TerminalView():
             elif a == 9: # \t
                 self.terminal_x += 2
             elif a == 10: # \n
-                newline()
+                # if another newline pending, do one now
+                if self.delayed_newline:
+                    newline()
+                # set delayed_newline - don't actually newline until there's something on that line
+                # otherwise the bottom line is just always wasted.
+                self.delayed_newline = True
             else:
                 print(f"{self.name}: unknown control char {a}")
 

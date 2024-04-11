@@ -113,7 +113,7 @@ class LogViewer(SSHBackgroundThreadApp):
     def console_message(self, text):
         text = self.filter(text)
         if text:
-            self.terminal_view.write(str(text) + "\n", colour='white')
+            self.terminal_view.write(str(text), colour='white')
             self.data_updated = True
 
     def console_message_onceonly(self, text):
