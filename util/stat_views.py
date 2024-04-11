@@ -8,16 +8,26 @@ class stat_display(pygame_gui.elements.ui_label.UILabel):
         kwargs['object_id'] = object_id
         super().__init__(*args, **kwargs)
 
+    def set_text_colour(self, colour):
+        if self.text_colour != colour:
+                self.text_colour = colour
+                self.rebuild()
+
 class stat_label(pygame_gui.elements.ui_label.UILabel):
     def __init__(self, *args, object_id='#param_label', **kwargs):
         kwargs['object_id'] = object_id
         super().__init__(*args, **kwargs)
 
+    def set_text_colour(self, colour):
+        if self.text_colour != colour:
+                self.text_colour = colour
+                self.rebuild()
+
 class stat_view(object):
     def __init__(self, relative_rect, name, manager, label_s=None, split='lr', colourmap={}, colourmap_mode=None, unit='', object_id_label='', object_id_value=''):
         self.colourmap = colourmap
         self.colourmap_mode = colourmap_mode
-        
+
         if colourmap_mode == 'gt':
             self.colourmap_list = [k for k in list(colourmap.keys()) if k is not None]
             self.colourmap_list.sort(reverse=True)
@@ -75,7 +85,7 @@ class stat_view(object):
             self.set_text(f"{value:.1f}{self.unit}")
         if isinstance(value, str):
             self.set_text(value)
-    
+
     def text_colour_from_colourmap(self, value):
         if self.colourmap_mode == 'gt':
             cmaps = [x for x in self.colourmap_list if value > x]

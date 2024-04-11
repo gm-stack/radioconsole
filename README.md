@@ -131,7 +131,7 @@ modules:
       backend: rooter       # only one supported for now
       host: 172.17.0.254    # host of modem to connect to
       port: 80              # [Optional] HTTP port to connect on, default 80
-      username: root        # username for web interface 
+      username: root        # username for web interface
       password: hunter2     # password for web interface
 ```
 
@@ -176,11 +176,11 @@ modules:
       host: 127.0.0.1   # Host to SSH to
       username: pi      # [Optional] Username, defaults to 'pi'
       port: 22          # [Optional] SSH Port, defaults to 22
-      command: journalctl -f --no-tail -u radioconsole.service 
+      command: journalctl -f --no-tail -u radioconsole.service
       # [Optional] - no command required if you just want to be able to use the buttons
       # no-tail prints all previous messages
       filter_lines:            # [Optional] List of regexes. If a line matches the regex (partial match)
-        - test                 #            the log line will not be printed. 
+        - test                 #            the log line will not be printed.
                                #            Use instead of piping to grep -v
       retry_seconds: 5         # [Optional] if command exits, re-run in, default 5
       max_scrollback: 50000    # [Optional] number of bytes of scrollback, default 50000
@@ -200,7 +200,7 @@ modules:
 
 Like the above log viewer but much more customised for SystemD logs.
 
-This log viewer constructs the `journalctl` command to view the log in JSON format, and then parses the JSON from the remote end to have better control over how the log entries are formatted. Timestamps are printed with a date if they are not from today, and without the date if they are (to save space). 
+This log viewer constructs the `journalctl` command to view the log in JSON format, and then parses the JSON from the remote end to have better control over how the log entries are formatted. Timestamps are printed with a date if they are not from today, and without the date if they are (to save space).
 
 Optionally, showing the service name can be disabled.
 
@@ -225,7 +225,7 @@ modules:
                                #            Default: False if only one service being monitored
                                #                     True if more than one service
       filter_lines:            # [Optional] List of regexes. If a line matches the regex (partial match)
-        - test                 #            the log line will not be printed. 
+        - test                 #            the log line will not be printed.
                                #            Use instead of piping to grep -v
       retry_seconds: 5         # [Optional] if command exits, re-run in, default 5
       max_scrollback: 50000    # [Optional] number of bytes of scrollback, default 50000
@@ -276,6 +276,21 @@ modules:
         - auto_rx
         - chasemapper
         - pat
+```
+
+## GPIO Shutdown status
+
+Connects to a remote host and monitors the state of `gpio_shutdown` - getting the current countdown timer out of the SystemD logs.
+
+```yaml
+modules:
+  carpi_power:
+    type: gpio_shutdown_status
+    display_name: CarPi power
+    config:
+      host: 172.17.0.3         # Host to SSH to
+      username: pi             # [Optional] Username, defaults to 'pi'
+      port: 22                 # [Optional] SSH Port, defaults to 22
 ```
 
 ## GPS Status

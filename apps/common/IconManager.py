@@ -7,11 +7,12 @@ radioconsole_icons = {
     'signal': pygame.image.load("apps/common/signal.png"),
     'services': pygame.image.load("apps/common/services.png"),
     'gps_satellite': pygame.image.load("apps/common/gps_satellite.png"),
+    'power': pygame.image.load("apps/common/power.png")
 }
 
 def colour_image(image, colour, colourname):
     radioconsole_icons[f'{image}_{colourname}'] = radioconsole_icons[image].copy()
-    radioconsole_icons[f'{image}_{colourname}'].fill(colour, None, pygame.BLEND_MULT) 
+    radioconsole_icons[f'{image}_{colourname}'].fill(colour, None, pygame.BLEND_MULT)
 
 colour_image('warning', (255,0,0,255), 'red')
 colour_image('warning', (255,165,0,255), 'orange')
@@ -31,3 +32,4 @@ darken_image('raspberrypi')
 darken_image('satellite')
 darken_image('signal')
 darken_image('services')
+darken_image('power')

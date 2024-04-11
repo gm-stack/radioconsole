@@ -111,3 +111,23 @@ label:
   prototype: '#param_label_vert'
   colours:
     normal_text: "#CC8400"
+'#countdown':
+  prototype: '#param_label'
+  colours:
+    normal_text: "#666666"
+    dark_bg: "#000000"
+  font:
+    name: "B612Mono"
+    size: 90
+    bold: 0
+    regular_path: "ttf/B612Mono-Regular.ttf"
+'#countdown_label':
+  prototype: '#param_label'
+  colours:
+    normal_text: "#666666"
+    dark_bg: "#000000"
+  font:
+    name: "B612"
+    size: 30
+    bold: 0
+    regular_path: "ttf/B612-Regular.ttf"

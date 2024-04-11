@@ -10,10 +10,10 @@ class SystemDLogMessage(object):
         self.msg_json = msg
         self.msg = SimpleNamespace(
             # remove __ from keys that start with it as it interfeces with SimpleNamespace
-            **{key.removeprefix("__"): value for key,value in json.loads(self.msg_json).items()}
+            **{key.removeprefix("__").lower(): value for key,value in json.loads(self.msg_json).items()}
         )
 
-        self.timestamp = datetime.datetime.fromtimestamp(int(self.msg.REALTIME_TIMESTAMP) / 1000000)
+        self.timestamp = datetime.datetime.fromtimestamp(int(self.msg.realtime_timestamp) / 1000000)
 
         if self.timestamp.date() == datetime.date.today():
             self.timestamp_str = self.timestamp.strftime("%H:%M:%S")
@@ -21,13 +21,13 @@ class SystemDLogMessage(object):
             self.timestamp_str = self.timestamp.strftime("%Y-%m-%d %H:%M:%S")
 
         if self.show_service_name:
-            self.syslog_id = f" {self.msg.SYSLOG_IDENTIFIER}[{self.msg._PID}]"
+            self.syslog_id = f" {self.msg.syslog_identifier}[{self.msg._pid}]"
         else:
             self.syslog_id = ""
 
     # str version that ends up on terminal
     def __str__(self):
-        return f"{self.timestamp_str}{self.syslog_id}: {self.msg.MESSAGE}"
+        return f"{self.timestamp_str}{self.syslog_id}: {self.msg.message}"
 
 class SystemDLogViewer(LogViewer):
     default_config = {
@@ -44,7 +44,6 @@ class SystemDLogViewer(LogViewer):
     }
 
     def __init__(self, bounds, config, name):
-
         config.command = "journalctl -f -n 100 --output json " \
             + " ".join([f"-u {s}.service" for s in config.services])
 
