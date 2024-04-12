@@ -13,6 +13,7 @@ class SystemDLogMessage(object):
             j = json.loads(self.msg_json).items()
         except json.JSONDecodeError as e:
             self.msg = SimpleNamespace(message=f"{str(e)}\n{self.msg_json}")
+            self.timestamp = datetime.datetime.utcnow()
             self.timestamp_str = ""
             self.syslog_id = ""
             return
@@ -52,12 +53,21 @@ class SystemDLogViewer(LogViewer):
         "commands": [],
         "show_service_name": None
     }
+    lookback = None
 
     def __init__(self, bounds, config, name):
-        lookback = config.lookback
-        config.command = f"journalctl -f -n {lookback} --output json " \
-            + " ".join([f"-u {s}.service" for s in config.services])
 
+        service_starts = "\n".join([f"$(service_start_time {s})" for s in config.services])
+        service_flags = " ".join([f"-u {s}.service" for s in config.services])
+
+        # get earliest start of any function called to get all logs since service start
+        config.command = f"""bash -c 'function service_start_time() {{
+    systemctl is-active --quiet "$1" && systemctl show --property=ActiveEnterTimestamp --value "$1" | cut -c 5-
+}}
+service_start_time="{service_starts}"
+start_time="$(echo "$service_start_time" | grep -v -e ^$ | sort | head -n 1)"
+journalctl -f {service_flags} --since "$start_time" --output json'
+"""
         # if set, use it, else default to only showing service name if >1 service
         if config.show_service_name in (True, False):
             self.show_service_name = config.show_service_name

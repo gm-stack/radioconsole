@@ -7,7 +7,8 @@ radioconsole_icons = {
     'signal': pygame.image.load("apps/common/signal.png"),
     'services': pygame.image.load("apps/common/services.png"),
     'gps_satellite': pygame.image.load("apps/common/gps_satellite.png"),
-    'power': pygame.image.load("apps/common/power.png")
+    'power': pygame.image.load("apps/common/power.png"),
+    'direwuff': pygame.image.load("apps/common/direwuff.png")
 }
 
 def colour_image(image, colour, colourname):
@@ -33,3 +34,4 @@ darken_image('satellite')
 darken_image('signal')
 darken_image('services')
 darken_image('power')
+darken_image('direwuff')

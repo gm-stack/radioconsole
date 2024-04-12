@@ -98,7 +98,6 @@ class LogViewer(SSHBackgroundThreadApp):
     def filter(self, msg):
         for r in self.regex_list:
             if r.search(msg):
-                print(f"filtering line '{msg}' due to '{r}'")
                 return
         return msg
 

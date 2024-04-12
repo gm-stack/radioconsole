@@ -4,12 +4,12 @@ import math
 import pygame
 import pygame_gui
 
-from ..LogViewer import SystemDLogViewer
 from ..common import time_format
+from ..common.LogViewerStatusApp import LogViewerStatusApp
 from util import stat_display
 from .status_icon import gpio_shutdown_status_icon
 
-class GPIOShutdown(SystemDLogViewer):
+class GPIOShutdown(LogViewerStatusApp):
 
     default_config = {
         "port": 22,
@@ -32,27 +32,65 @@ class GPIOShutdown(SystemDLogViewer):
         terminal_bounds.top += 200
         terminal_bounds.height -= 200
 
-        config.services = ['gpio_shutdown']
-        config.commands = {
-            "gpio_shutdown_start": "sudo service gpio_shutdown start",
-            "gpio_shutdown_stop": "sudo service gpio_shutdown stop",
-            "gpio_shutdown_status": "sudo service gpio_shutdown status",
-            "reboot": "sudo reboot",
-        }
-        config.show_service_name = False
-        config.retry_seconds = 5
-        config.max_scrollback = 50000
-        config.command_button_h = 48
-        config.command_buttons_x = 4
-        config.command_button_margin = 2
-        config.lookback = 100
+        self.services = ['gpio_shutdown']
 
         self.shutdown_timer_running = False
         self.shutdown_timer = -1.0
 
-        self.re_pin_low = re.compile(r'pin \d* state is now low')
-        self.re_pin_high = re.compile(r'pin \d* state is now high')
-        self.re_pin_still_high = re.compile(r'pin \d* still high, shutdown in (\d*)s')
+        def pin_low(msg, match):
+            self.shutdown_timer = float(self.GPIOShutdownConfig.shutdown_time)
+            self.update_shutdown_timer("pwr on", (0xFF,0xFF,0xFF))
+            self.shutdown_timer_running = False
+            self.countdown.set_text_colour((0xCC,0xCC,0xCC))
+            self.countdown_label.set_text_colour((0xCC,0xCC,0xCC))
+            self.countdown_label.set_text("gpio_shutdown running, power keyed")
+            self.data_updated = True
+
+        def pin_high(msg, match):
+            self.shutdown_timer = float(self.GPIOShutdownConfig.shutdown_time)
+            self.update_shutdown_timer("pwr off", (0xFF,0xA5,0x00))
+            self.shutdown_timer_running = True
+            self.countdown.set_text_colour((0xCC,0x84,0x00))
+            self.countdown_label.set_text_colour((0xCC,0x84,0x00))
+            self.countdown_label.set_text("power unkeyed, will shut down")
+            self.data_updated = True
+
+        def pin_still_high(msg, match):
+            self.shutdown_timer = float(match.group(1))
+            self.update_shutdown_timer("pwr off", (0xFF,0xA5,0x00))
+            self.shutdown_timer_running = True
+            self.countdown.set_text_colour((0xCC,0x84,0x00))
+            self.countdown_label.set_text_colour((0xCC,0x84,0x00))
+            self.countdown_label.set_text("power unkeyed, will shut down")
+            self.data_updated = True
+
+        def radioconsole_stopped(msg, match):
+            self.shutdown_timer = -1.0
+            self.shutdown_timer_running = False
+            self.update_shutdown_timer("stopped", (0xCC,0xCC,0xCC))
+            self.countdown.set_text("--:--.---")
+            self.countdown_label.set_text("gpio_shutdown not running")
+            self.countdown.set_text_colour((0x66,0x66,0x66))
+            self.countdown_label.set_text_colour((0x66,0x66,0x66))
+            self.data_updated = True
+
+        def radioconsole_started(msg, match):
+            self.shutdown_timer = float(self.GPIOShutdownConfig.shutdown_time)
+            self.update_shutdown_timer("pwr on", (0xFF,0xFF,0xFF))
+            self.shutdown_timer_running = False
+            self.countdown.set_text_colour((0xCC,0xCC,0xCC))
+            self.countdown_label.set_text_colour((0xCC,0xCC,0xCC))
+            self.countdown_label.set_text("gpio_shutdown running, power keyed")
+            self.data_updated = True
+
+        self.process_messages = [
+            {"r": r'pin \d* state is now low', 'func': pin_low},
+            {"r": r'pin \d* state is now high', 'func': pin_high},
+            {"r": r'pin \d* still high, shutdown in (\d*)s', 'func': pin_still_high},
+            {"r": r'Stopped Radioconsole gpio_shutdown', 'func': radioconsole_stopped},
+            {"r": r'Started Radioconsole gpio_shutdown.', 'func': radioconsole_started},
+
+        ]
 
         super().__init__(terminal_bounds, config, "GPIOLogViewer")
 
@@ -80,63 +118,11 @@ class GPIOShutdown(SystemDLogViewer):
         self.status_icons_updated = True
         self.data_updated = True
 
-
-    def filter(self, text):
-        # this is a SystemDLogMessage class
-        filtered_msg = super().filter(text)
-
-        msg_text = filtered_msg.msg.message
-        if msg_text == 'Stopped Radioconsole gpio_shutdown.':
-            self.shutdown_timer = -1.0
-            self.shutdown_timer_running = False
-            self.update_shutdown_timer("stopped", (0xCC,0xCC,0xCC))
-            self.countdown.set_text("--:--.---")
-            self.countdown_label.set_text("gpio_shutdown not running")
-            self.countdown.set_text_colour((0x66,0x66,0x66))
-            self.countdown_label.set_text_colour((0x66,0x66,0x66))
-        elif msg_text == 'Started Radioconsole gpio_shutdown.':
-            self.shutdown_timer = float(self.GPIOShutdownConfig.shutdown_time)
-            self.update_shutdown_timer("pwr on", (0xFF,0xFF,0xFF))
-            self.shutdown_timer_running = False
-            self.countdown.set_text_colour((0xCC,0xCC,0xCC))
-            self.countdown_label.set_text_colour((0xCC,0xCC,0xCC))
-            self.countdown_label.set_text("gpio_shutdown running, power keyed")
-        elif msg_text.startswith('pin '):
-            pin_low = self.re_pin_low.match(msg_text)
-            if pin_low:
-                self.shutdown_timer = float(self.GPIOShutdownConfig.shutdown_time)
-                self.update_shutdown_timer("pwr on", (0xFF,0xFF,0xFF))
-                self.shutdown_timer_running = False
-                self.countdown.set_text_colour((0xCC,0xCC,0xCC))
-                self.countdown_label.set_text_colour((0xCC,0xCC,0xCC))
-                self.countdown_label.set_text("gpio_shutdown running, power keyed")
-            pin_high = self.re_pin_high.match(msg_text)
-            if pin_high:
-                self.shutdown_timer = float(self.GPIOShutdownConfig.shutdown_time)
-                self.update_shutdown_timer("pwr off", (0xFF,0xA5,0x00))
-                self.shutdown_timer_running = True
-                self.countdown.set_text_colour((0xCC,0x84,0x00))
-                self.countdown_label.set_text_colour((0xCC,0x84,0x00))
-                self.countdown_label.set_text("power unkeyed, will shut down")
-            pin_still_high = self.re_pin_still_high.match(msg_text)
-            if pin_still_high:
-                self.shutdown_timer = float(pin_still_high.group(1))
-                self.update_shutdown_timer("pwr off", (0xFF,0xA5,0x00))
-                self.shutdown_timer_running = True
-                self.countdown.set_text_colour((0xCC,0x84,0x00))
-                self.countdown_label.set_text_colour((0xCC,0x84,0x00))
-                self.countdown_label.set_text("power unkeyed, will shut down")
-
-        self.data_updated = True
-
-        return filtered_msg
-
     def update_shutdown_timer(self, status, colour):
         self.countdown.set_text(time_format.mm_ss_fff(self.shutdown_timer))
         self.countdown.set_text_colour(colour)
         self.countdown_label.set_text_colour(colour)
         self.status_icon.update(None, self.shutdown_timer, colour, status)
-
 
     def update(self, dt):
         if self.shutdown_timer_running:
