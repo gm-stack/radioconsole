@@ -125,34 +125,34 @@ class LogViewer(SSHBackgroundThreadApp):
         self.prev_tail_command = command
 
         print(f"set tail command to {command}")
+        self.run_ssh_func_persistent(self.config, "tail", self.run_tail_command, command)
 
-        def run_tail_command(ts, command):
-            self.status_message(f"$ {command}\n")
 
-            ch = ts.open_session()
-            ch.set_combine_stderr(True)
-            stdout = ch.makefile('rb', -1)
-            ch.exec_command(command)
+    def run_tail_command(self, ts, command):
+        self.status_message(f"$ {command}\n")
 
-            while True:
-                out = stdout.readline()
-                if not out:
-                    break
-                else:
-                    out_text = out.decode('UTF-8')
-                    self.console_message(out_text)
+        ch = ts.open_session()
+        ch.set_combine_stderr(True)
+        stdout = ch.makefile('rb', -1)
+        ch.exec_command(command)
 
-            exit_status = stdout.channel.recv_exit_status()
-            msg = f"\nCommand exited with status {exit_status}\n"
-            msg += f"Retrying in {self.logviewer_config.retry_seconds}s\n"
-            if exit_status == 0:
-                self.status_message(msg)
+        while True:
+            out = stdout.readline()
+            if not out:
+                break
             else:
-                self.error_message(msg)
+                out_text = out.decode('UTF-8')
+                self.console_message(out_text)
 
-            self.data_updated = True
+        exit_status = stdout.channel.recv_exit_status()
+        msg = f"\nCommand exited with status {exit_status}\n"
+        msg += f"Retrying in {self.logviewer_config.retry_seconds}s\n"
+        if exit_status == 0:
+            self.status_message(msg)
+        else:
+            self.error_message(msg)
 
-        self.run_ssh_func_persistent(self.config, "tail", run_tail_command, command)
+        self.data_updated = True
 
     def run_button_command(self, command):
         self.status_message(f"\n---\n>>> {command}\n")

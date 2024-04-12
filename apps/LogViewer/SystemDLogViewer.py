@@ -58,29 +58,76 @@ class SystemDLogViewer(LogViewer):
         "commands": [],
         "show_service_name": None
     }
-    lookback = None
 
     def __init__(self, bounds, config, name):
+        config.command = 'cat' # not actually used, see below
 
-        service_starts = "\n".join([f"$(service_start_time {s})" for s in config.services])
-        service_flags = " ".join([f"-u {s}.service" for s in config.services])
-
-        # get earliest start of any function called to get all logs since service start
-        config.command = f"""bash -c 'function service_start_time() {{
-    systemctl is-active --quiet "$1" && systemctl show --property=ActiveEnterTimestamp --value "$1" | cut -c 5-
-}}
-service_start_time="{service_starts}
-$(TZ=UTC date "+%Y-%m-%d %H:%M:%S")"
-start_time="$(echo "$service_start_time" | grep -v -e ^$ | sort | head -n 1)"
-journalctl -f {service_flags} --since "$start_time" --output json'
-"""
-        # if set, use it, else default to only showing service name if >1 service
+        # if show_service_name set, use it
+        # else default to only showing service name if >1 service
         if config.show_service_name in (True, False):
             self.show_service_name = config.show_service_name
         else:
             self.show_service_name = (len(config.services) > 1)
 
         super().__init__(bounds, config, name)
+
+    def run_tail_command(self, ts, command):
+        self.status_message(f"tail systemd logs for {self.config.services}")
+
+        # for all the services see if they are running
+        # if running, get the time they started
+        start_timestamps = [
+            self.run_command(ts,
+                f"systemctl is-active --quiet '{service}' &&" \
+                f"systemctl show --property=ActiveEnterTimestamp --value '{service}'"
+            )
+            for service in self.config.services
+        ]
+
+        # Parse the timestamps and sort, earliest first.
+        # Discard non-running services.
+        start_timestamps_running = sorted([
+            datetime.datetime.strptime(t, "%a %Y-%m-%d %H:%M:%S %Z")
+            for t in start_timestamps if t != ''
+        ])
+
+        # if any service running, pick earliest start time to start tailing from
+        start_timestamp = None
+        if len(start_timestamps_running) != 0:
+            start_timestamp = start_timestamps_running[0]
+
+        service_flags = " ".join([f"-u {s}.service" for s in self.config.services])
+
+        # if service running, tail from start
+        if start_timestamp:
+            command = f"journalctl -f {service_flags} --since '{start_timestamp}' --output json"
+        else:
+            command = f"journalctl -f {service_flags} -n '{self.config.lookback}' --output json"
+
+        self.status_message(f"\n---\n>>> {command}\n")
+
+        ch = ts.open_session()
+        ch.set_combine_stderr(True)
+        stdout = ch.makefile('rb', -1)
+        ch.exec_command(command)
+
+        while True:
+            out = stdout.readline()
+            if not out:
+                break
+            else:
+                out_text = out.decode('UTF-8')
+                self.console_message(out_text)
+
+        exit_status = stdout.channel.recv_exit_status()
+        msg = f"\nCommand exited with status {exit_status}\n"
+        msg += f"Retrying in {self.logviewer_config.retry_seconds}s\n"
+        if exit_status == 0:
+            self.status_message(msg)
+        else:
+            self.error_message(msg)
+
+        self.data_updated = True
 
     def filter(self, json_text):
         out_msg = SystemDLogMessage(json_text, self.show_service_name)
