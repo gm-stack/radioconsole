@@ -18,9 +18,14 @@ class SystemDLogMessage(object):
             self.syslog_id = ""
             return
 
+        def remove_prefix(text, prefix):
+            if text.startswith(prefix):
+                return text[len(prefix):]
+            return text
+
         self.msg = SimpleNamespace(
             # remove __ from keys that start with it as it interfeces with SimpleNamespace
-            **{key.removeprefix("__").lower(): value for key,value in j}
+            **{remove_prefix(key, "__").lower(): value for key,value in j}
         )
 
         self.timestamp = datetime.datetime.fromtimestamp(int(self.msg.realtime_timestamp) / 1000000)
