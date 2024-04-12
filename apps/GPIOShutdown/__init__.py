@@ -5,6 +5,7 @@ import pygame
 import pygame_gui
 
 from ..LogViewer import SystemDLogViewer
+from ..common import time_format
 from util import stat_display
 from .status_icon import gpio_shutdown_status_icon
 
@@ -131,9 +132,7 @@ class GPIOShutdown(SystemDLogViewer):
         return filtered_msg
 
     def update_shutdown_timer(self, status, colour):
-        mm = int(self.shutdown_timer // 60.0)
-        ss = self.shutdown_timer % 60.0
-        self.countdown.set_text(f"{mm:02}:{ss:06.3f}")
+        self.countdown.set_text(time_format.mm_ss_fff(self.shutdown_timer))
         self.countdown.set_text_colour(colour)
         self.countdown_label.set_text_colour(colour)
         self.status_icon.update(None, self.shutdown_timer, colour, status)

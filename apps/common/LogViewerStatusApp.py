@@ -53,23 +53,25 @@ class LogViewerStatusApp(SystemDLogViewer):
         else:
             msg_text = str(filtered_msg.msg.message)
 
-        matched = False
+        hide_message = False
         for m in self.process_messages:
             matches = m['regex'].search(msg_text)
             if matches:
-                matched = True
                 if 'ui' in m:
-                    for i, m in enumerate(m['ui']):
-                        self.ui[m].set_text(matches.group(i+1))
+                    for i, ui_element in enumerate(m['ui']):
+                        self.ui[ui_element].set_text(matches.group(i+1))
+                if 'func' in m:
+                    m['func'](filtered_msg, matches)
+                if not m.get('passthrough', False):
+                    hide_message = True
 
-
-        # todo: provide support for callback
-
-        # if our filter matched a log message, don't write to screen
-        if matched:
+        # if our filter matched a log message
+        # unless that regex has passthrough=True
+        # don't write to screen
+        if hide_message:
             return
 
-        print(msg_text)
+        #print(msg_text)
 
         self.data_updated = True
         return filtered_msg

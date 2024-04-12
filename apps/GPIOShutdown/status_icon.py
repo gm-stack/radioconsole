@@ -3,6 +3,7 @@ import gps
 from pygame import surface
 
 from ..common import status_icon
+from ..common import time_format
 
 class gpio_shutdown_status_icon(status_icon):
     def __init__(self):
@@ -14,12 +15,7 @@ class gpio_shutdown_status_icon(status_icon):
     def update(self, icon, timer, colour, status):
         self.clear()
 
-        if timer > 0:
-            mm = int(timer // 60.0)
-            ss = int(timer % 60.0)
-            countdown_text = f"{mm:02}:{ss:02}"
-        else:
-            countdown_text = "--:--"
+        countdown_text = time_format.mm_ss(timer)
 
         status_text = self.font.render(status, True, (0xFF,0xFF,0xFF))
         self.surface.blit(status_text, status_text.get_rect(midtop=(30,0)))

@@ -1,9 +1,11 @@
 import re
 import math
+import datetime
 
 import pygame
 import pygame_gui
 
+from ..common.time_format import mm_ss
 from ..common.LogViewerStatusApp import LogViewerStatusApp
 from util import stat_view, stat_label, stat_display
 
@@ -31,17 +33,47 @@ class DirewolfStatus(LogViewerStatusApp):
 
         terminal_bounds = pygame.Rect(bounds)
 
+        self.has_rx_packet = False
+        self.has_ig_tx_packet = False
+        self.has_rf_tx_packet = False
+
+        self.rx_packet_time = 0.0
+        self.ig_tx_packet_time = 0.0
+        self.rf_tx_packet_time = 0.0
+
+        self.igate_server = ""
+        self.igate_server_name = ""
+
+        def rx_packet(msg, match):
+            self.has_rx_packet = True
+            self.rx_packet_time = (datetime.datetime.now() - msg.timestamp).total_seconds()
+
+        def ig_tx_packet(msg, match):
+            self.has_ig_tx_packet = True
+            self.ig_tx_packet_time = (datetime.datetime.now() - msg.timestamp).total_seconds()
+
+        def rf_tx_packet(msg, match):
+            self.has_rf_tx_packet = True
+            self.rf_tx_packet_time = (datetime.datetime.now() - msg.timestamp).total_seconds()
+
+        def igate_server(msg, match):
+            self.igate_server = match[1]
+            self.ui['igate_server'].set_text(f"{self.igate_server} -> {self.igate_server_name}")
+
+        def igate_server_name(msg, match):
+            self.igate_server_name = match[1]
+            self.ui['igate_server'].set_text(f"{self.igate_server} -> {self.igate_server_name}")
+
         self.process_messages = [
             {"r": r'\S*: Sample rate approx\. .* receive audio level \S* (\d*)', 'ui': ['audio_level']},
-            {"r": r'\[ig\](?! #) (.*)', 'ui': ['igate_packet']},
-            {"r": r'\[0L\] (.*)', 'ui': ['radio_packet']},
-            {"r": r'\[\d.\d\] (.*)', 'ui': ['rx_packet']},
+            {"r": r'\[ig\](?! #) (.*)', 'ui': ['ig_tx_packet'], 'passthrough': True, 'func': ig_tx_packet},
+            {"r": r'\[0L\] (.*)', 'ui': ['rf_tx_packet'], 'passthrough': True, 'func': rf_tx_packet},
+            {"r": r'\[\d.\d\] (.*)', 'ui': ['rx_packet'], 'passthrough': True, 'func': rx_packet},
             {"r": r'Error getting data from radio'},
-            {"r": r'Now connected to IGate server (.*)', 'ui': ['igate_server']},
-            {"r": r'\[ig\] # logresp \S* verified, server (\S*)', 'ui': ['igate_server_name']},
+            {"r": r'Now connected to IGate server (.*) \(.*\)', 'passthrough': True, 'func': igate_server },
+            {"r": r'\[ig\] # logresp \S* verified, server (\S*)', 'func': igate_server_name, 'passthrough': True},
             {"r": r'Error reading from IGate server\.\s*Closing connection.()', 'ui': ['igate_server']},
             {"r": r'.* audio level = (\d*)\(', 'ui': ['audio_level_pkt']}
-
         ]
 
         super().__init__(terminal_bounds, config, "DirewolfLogViewer")
@@ -55,7 +87,7 @@ class DirewolfStatus(LogViewerStatusApp):
             label_s=100
         )
         y += 64
-        self.ui['igate_packet_ago'] = stat_view(
+        self.ui['rx_packet_ago'] = stat_view(
             relative_rect=pygame.Rect(0, y, 400, 32),
             name='time ago',
             manager=self.gui,
@@ -76,7 +108,7 @@ class DirewolfStatus(LogViewerStatusApp):
         )
 
         y += 40
-        self.ui['igate_packet'] = stat_view(
+        self.ui['ig_tx_packet'] = stat_view(
             relative_rect=pygame.Rect(0, y, 800, 32),
             name='tx_igate',
             manager=self.gui,
@@ -84,7 +116,7 @@ class DirewolfStatus(LogViewerStatusApp):
             label_s=100
         )
         y += 32
-        self.ui['igate_packet_ago'] = stat_view(
+        self.ui['ig_tx_packet_ago'] = stat_view(
             relative_rect=pygame.Rect(0, y, 400, 32),
             name='time ago',
             manager=self.gui,
@@ -98,17 +130,9 @@ class DirewolfStatus(LogViewerStatusApp):
             split='lr',
             label_s=100
         )
-        y += 32
-        self.ui['igate_server_name'] = stat_view(
-            relative_rect=pygame.Rect(400,y,400,32),
-            name='igate_s',
-            manager=self.gui,
-            split='lr',
-            label_s=100
-        )
 
         y += 40
-        self.ui['radio_packet'] = stat_view(
+        self.ui['rf_tx_packet'] = stat_view(
             relative_rect=pygame.Rect(0, y, 800, 32),
             name='tx_rf',
             manager=self.gui,
@@ -116,7 +140,7 @@ class DirewolfStatus(LogViewerStatusApp):
             label_s=100
         )
         y += 32
-        self.ui['radio_packet_ago'] = stat_view(
+        self.ui['rf_tx_packet_ago'] = stat_view(
             relative_rect=pygame.Rect(0, y, 266, 32),
             name='last sent',
             manager=self.gui,
@@ -139,48 +163,27 @@ class DirewolfStatus(LogViewerStatusApp):
         )
         y += 40
 
-
-
-
-        # self.ui['protomode'] = stat_view(
-        #     relative_rect=pygame.Rect(610, y, 190, 32),
-        #     name='mode',
-        #     manager=self.gui,
-        #     split='lr'
-        # )
-        # y += 32
-        # self.ui['bandwidth'] = stat_view(
-        #     relative_rect=pygame.Rect(610, y, 190, 32),
-        #     name='bandwidth',
-        #     manager=self.gui,
-        #     split='lr'
-        # )
-
-
-
-        # self.ui['input_peaks'] = stat_display(
-        #     relative_rect=pygame.Rect(0, y, 800, 32),
-        #     manager=self.gui,
-        #     text="input_peaks"
-        # )
-
-        # y += 32
-        # self.ui['status'] = stat_view(
-        #     relative_rect=pygame.Rect(0, y, 800, 32),
-        #     manager=self.gui,
-        #     name="status",
-        #     split='lr',
-        #     label_s=100
-        # )
-
-
         terminal_bounds.top = y
-        terminal_bounds.height = (bounds.h + bounds.y) - y - config.command_button_h
+        terminal_bounds.height = (bounds.h + bounds.y) - y
         print(terminal_bounds)
         self.terminal_view.set_bounds(terminal_bounds)
 
         self.data_updated = True
 
-    #def filter(self, line):
-    #    filtered_msg = super().filter(line)
-    #    print(str(filtered_msg.msg.message))
+    def update(self, dt):
+        if self.has_rx_packet:
+            self.rx_packet_time += dt
+            self.ui['rx_packet_ago'].set_text(mm_ss(self.rx_packet_time))
+            self.data_updated = True
+
+        if self.has_ig_tx_packet:
+            self.ig_tx_packet_time += dt
+            self.ui['ig_tx_packet_ago'].set_text(mm_ss(self.ig_tx_packet_time))
+            self.data_updated = True
+
+        if self.has_rf_tx_packet:
+            self.rf_tx_packet_time += dt
+            self.ui['rf_tx_packet_ago'].set_text(mm_ss(self.rf_tx_packet_time))
+            self.data_updated = True
+
+        return super().update(dt)
