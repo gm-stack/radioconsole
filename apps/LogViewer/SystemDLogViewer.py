@@ -64,7 +64,8 @@ class SystemDLogViewer(LogViewer):
         config.command = f"""bash -c 'function service_start_time() {{
     systemctl is-active --quiet "$1" && systemctl show --property=ActiveEnterTimestamp --value "$1" | cut -c 5-
 }}
-service_start_time="{service_starts}"
+service_start_time="{service_starts}
+$(TZ=UTC date "+%Y-%m-%d %H:%M:%S")"
 start_time="$(echo "$service_start_time" | grep -v -e ^$ | sort | head -n 1)"
 journalctl -f {service_flags} --since "$start_time" --output json'
 """
