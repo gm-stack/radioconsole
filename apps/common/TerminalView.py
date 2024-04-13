@@ -1,6 +1,5 @@
 import pygame
 from pygame import surface
-import pygame_gui
 
 FONT_CACHE=None
 

@@ -1,11 +1,7 @@
-import re
-import math
-
 import pygame
-import pygame_gui
 
 from ..common.LogViewerStatusApp import LogViewerStatusApp
-from util import stat_view, stat_label, stat_display
+from util import stat_view, stat_display
 
 class ARDOPStatus(LogViewerStatusApp):
     default_config = {

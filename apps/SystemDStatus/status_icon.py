@@ -1,6 +1,3 @@
-import pygame
-from pygame import surface
-
 from ..common import status_icon
 
 class systemd_status_icon(status_icon):

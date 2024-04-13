@@ -1,6 +1,4 @@
 import pygame
-import gps
-from pygame import surface
 
 from ..common import status_icon
 from ..common import time_format

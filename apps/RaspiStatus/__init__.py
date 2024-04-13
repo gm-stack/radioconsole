@@ -1,14 +1,10 @@
 import time
-import threading
 from types import SimpleNamespace
 
 import pygame
-import paramiko
 
-import crash_handler
 from ..common import SSHBackgroundThreadApp
-from config_reader import cfg
-from util import timegraph, stat_display, stat_label, stat_view, stat_view_graph, extract_number
+from util import timegraph, stat_label, stat_view, stat_view_graph, extract_number
 from .status_icon import raspi_status_icon
 
 class RaspiStatus(SSHBackgroundThreadApp):

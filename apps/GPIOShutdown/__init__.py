@@ -1,8 +1,4 @@
-import re
-import math
-
 import pygame
-import pygame_gui
 
 from ..common import time_format
 from ..common.LogViewerStatusApp import LogViewerStatusApp

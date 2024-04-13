@@ -1,7 +1,3 @@
-import pygame
-import gps
-from pygame import surface
-
 from ..common import status_icon
 
 class gps_status_icon(status_icon):

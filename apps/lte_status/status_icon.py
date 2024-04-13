@@ -1,5 +1,4 @@
-import pygame
-from pygame import surface, gfxdraw
+from pygame import gfxdraw
 
 from ..common import status_icon
 

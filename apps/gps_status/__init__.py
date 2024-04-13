@@ -1,16 +1,14 @@
 import threading
 import pygame
-import pygame_gui
 import time
 import gps
 import gps.clienthelpers
 import ctypes
 
 import crash_handler
-from config_reader import cfg
 from AppManager.app import app
 from .gps_satview import gps_satview, GNSS_IDS
-from util import timegraph, stat_display, stat_label, stat_view, stat_view_graph, extract_number
+from util import stat_display, stat_label
 from .status_icon import gps_status_icon
 
 class gps_status(app):

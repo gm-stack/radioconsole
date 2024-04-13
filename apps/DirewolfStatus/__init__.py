@@ -1,14 +1,11 @@
-import re
-import math
 import datetime
 
 import pygame
-import pygame_gui
 
 from .status_icon import direwolf_status_icon
-from ..common.time_format import mm_ss
+from ..common.time_format import hh_mm_ss
 from ..common.LogViewerStatusApp import LogViewerStatusApp
-from util import stat_view, stat_label, stat_display
+from util import stat_view
 
 class DirewolfStatus(LogViewerStatusApp):
     default_config = {
@@ -181,7 +178,7 @@ class DirewolfStatus(LogViewerStatusApp):
     def update(self, dt):
         if self.has_rx_packet:
             self.rx_packet_time += dt
-            rx_packet_time = mm_ss(self.rx_packet_time)
+            rx_packet_time = hh_mm_ss(self.rx_packet_time)
             if rx_packet_time != self.last_rx_packet_time:
                 self.ui['rx_packet_ago'].set_text(rx_packet_time)
                 self.status_icon.update(None, self.rx_packet_time, self.ig_tx_packet_time, self.rf_tx_packet_time)
@@ -190,7 +187,7 @@ class DirewolfStatus(LogViewerStatusApp):
 
         if self.has_ig_tx_packet:
             self.ig_tx_packet_time += dt
-            ig_tx_packet_time = mm_ss(self.ig_tx_packet_time)
+            ig_tx_packet_time = hh_mm_ss(self.ig_tx_packet_time)
             if ig_tx_packet_time != self.last_ig_tx_packet_time:
                 self.ui['ig_tx_packet_ago'].set_text(ig_tx_packet_time)
                 self.status_icon.update(None, self.rx_packet_time, self.ig_tx_packet_time, self.rf_tx_packet_time)
@@ -199,7 +196,7 @@ class DirewolfStatus(LogViewerStatusApp):
 
         if self.has_rf_tx_packet:
             self.rf_tx_packet_time += dt
-            rf_tx_packet_time = mm_ss(self.rf_tx_packet_time)
+            rf_tx_packet_time = hh_mm_ss(self.rf_tx_packet_time)
             if rf_tx_packet_time != self.last_rf_tx_packet_time:
                 self.ui['rf_tx_packet_ago'].set_text(rf_tx_packet_time)
                 self.status_icon.update(None, self.rx_packet_time, self.ig_tx_packet_time, self.rf_tx_packet_time)

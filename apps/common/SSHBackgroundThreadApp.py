@@ -1,18 +1,10 @@
-import math
-import html
 import threading
 import time
-import socket
-import select
 import ctypes
-
-import pygame
-import pygame_gui
 import paramiko
 
 import crash_handler
 from AppManager.app import app
-from config_reader import cfg
 
 class SSHBackgroundThreadApp(app):
 

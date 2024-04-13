@@ -3,14 +3,12 @@ import time
 
 import requests
 import pygame
-from pygame import surface
 import pygame_gui
 
 import crash_handler
-from config_reader import cfg
 from AppManager.app import app
 from .backends import backends
-from util import timegraph, stat_label, stat_display, stat_view, stat_view_graph, extract_number
+from util import stat_label, stat_display, stat_view, stat_view_graph, extract_number
 from .status_icon import lte_status_icon
 from ..common import TerminalView
 
@@ -157,7 +155,7 @@ class lte_status(app):
                 mode = self.data.get('mode', '')
                 if mode in ("-", "") :
                     icon = 'warning_orange'
-                    
+
             except requests.exceptions.RequestException as e:
                 try:
                     errargs = e.args[0].reason.args
@@ -195,20 +193,20 @@ class lte_status(app):
                 else:
                     for key, gui in self.band_values[1].items():
                         gui.set_text('')
-            
+
                 if self.data['mode'] != self.prev_mode or self.data['bands'] != self.prev_bands:
                     self.prev_bands = self.data['bands']
                     self.prev_mode = self.data.get("mode")
                     self.log_bands()
-                
+
                 if self.data.get("lac") != self.prev_lac:
                     self.prev_lac = self.data.get("lac")
                     self.log_lac()
 
-                    
+
         super().update(dt)
 
-    
+
     def log_bands(self):
         band_names = ",".join([ f"{band['band']}@{band['freq']}/{band['bandwidth']}" for band in self.data['bands'] ])
         self.log_msg(f"Using {self.data.get('mode')} at {band_names}")
@@ -219,7 +217,7 @@ class lte_status(app):
     def log_msg(self, msg):
         timestamp = time.strftime('%H:%M:%S')
         self.terminal_view.write(f"{timestamp}: {msg}\n")
-    
+
     def draw(self, screen):
         if super().draw(screen):
             self.terminal_view.draw(screen)

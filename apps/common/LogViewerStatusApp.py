@@ -1,11 +1,6 @@
 import re
-import math
-
-import pygame
-import pygame_gui
 
 from ..LogViewer import SystemDLogViewer
-from util import stat_view, stat_label, stat_display
 
 class LogViewerStatusApp(SystemDLogViewer):
     default_config = {

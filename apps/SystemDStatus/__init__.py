@@ -1,16 +1,10 @@
-import time
-import threading
 import json
 import types
 
 import pygame
 import pygame_gui
-import paramiko
 
-import crash_handler
-from AppManager.app import app
-from config_reader import cfg
-from util import timegraph, stat_display, stat_label, stat_view, stat_view_graph, extract_number
+from util import stat_label, stat_view
 from .status_icon import systemd_status_icon
 
 from ..LogViewer import LogViewer
