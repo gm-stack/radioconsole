@@ -138,6 +138,7 @@ class SystemDStatus(LogViewer):
             self.config,
             'service_state',
             self.do_fetch_service_info,
+            self.handle_error,
             self.config.services
         )
         self.max_no_data_seconds = int(config.retry_seconds) * 4.0

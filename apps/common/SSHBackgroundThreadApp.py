@@ -20,22 +20,22 @@ class SSHBackgroundThreadApp(app):
         self.backend_threads = {}
         super().__init__(bounds, config, name)
 
-    def run_ssh_func_persistent(self, host, thread_name, func, *args, **kwargs):
+    def run_ssh_func_persistent(self, host, thread_name, func, error_func, *args, **kwargs):
         # run a function persistently in a SSH session which shouldn't exit
 
         # use dirty hack to stop previous thread if one exists with same id
         if thread_name in self.backend_threads:
             print(f"stopping backend thread {thread_name}")
             ctypes.pythonapi.PyThreadState_SetAsyncExc(
-                ctypes.c_long(self.backend_threads[thread_name].ident), 
+                ctypes.c_long(self.backend_threads[thread_name].ident),
                 ctypes.py_object(SystemExit)
             )
-        
+
         # define a function to run the thread
         # wrap in crash_handler.monitor_thread to
         # bring everything down if it exits uncommanded
         def _run_command_in_loop(self):
-            self._command_backend_thread(host, func, False, *args, **kwargs)
+            self._command_backend_thread(host, func, error_func, False, *args, **kwargs)
 
         # start the thread
         self.backend_threads[thread_name] = threading.Thread(
@@ -44,7 +44,7 @@ class SSHBackgroundThreadApp(app):
             daemon=True
         )
         self.backend_threads[thread_name].start()
-    
+
     def run_ssh_func_single(self, host, func, *args, **kwargs):
         # run a function once in a SSH session which should run once an dexit
 
@@ -74,7 +74,7 @@ class SSHBackgroundThreadApp(app):
                 res += out
         return res.decode('UTF-8').rstrip(' \t\r\n\x00')
 
-    def _command_backend_thread(self, host, func, onceonly, *args, **kwargs):
+    def _command_backend_thread(self, host, func, error_func, onceonly, *args, **kwargs):
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
@@ -96,19 +96,17 @@ class SSHBackgroundThreadApp(app):
                     time.sleep(self.config.retry_seconds)
 
             except OSError as e:
-                # FIXME: if not log?
-                #self.error_message(f"Connection error: {str(e)}")
+                error_func(host, f"Connection error: {str(e)}")
                 self.data_updated = True
 
             except EOFError as e:
-                # FIXME: if not log?
+                error_func(host, f"EOF error: {str(e)}")
                 self.data_updated = True
 
             except paramiko.SSHException as e:
-                # FIXME: if not log?
-                #self.error_message(f"SSH error: {str(e)}")
+                error_func(host, f"SSH error: {str(e)}")
                 self.data_updated = True
-            
+
             if onceonly:
                 break
             else:

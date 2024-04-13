@@ -94,10 +94,16 @@ class RaspiStatus(SSHBackgroundThreadApp):
             self.status_icon_classes[hostname] = status_icon
             self.status_icons.append(status_icon.surface)
 
+            def handle_error(host, text):
+                self.data[host] = {'status': f"Error: {text}"}
+                self.host_updated[host] = True
+                self.data_updated = True
+
             self.run_ssh_func_persistent(
                 SimpleNamespace(**host_cfg),
                 hostname,
                 self.get_pi_status,
+                handle_error,
                 host_cfg
             )
             # first call starts watchdog
@@ -246,7 +252,7 @@ class RaspiStatus(SSHBackgroundThreadApp):
     def get_pi_status(self, ts, host):
         def run_command(cmd):
             return self.run_command(ts,cmd)
-        
+
         while True:
             start_time = time.monotonic()
 

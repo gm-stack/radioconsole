@@ -105,6 +105,9 @@ class LogViewer(SSHBackgroundThreadApp):
         self.terminal_view.write(text, colour='cyan')
         self.data_updated = True
 
+    def handle_error(self, host, text):
+        self.error_message(text)
+
     def error_message(self, text):
         self.terminal_view.write(text, colour='red')
         self.data_updated = True
@@ -125,7 +128,13 @@ class LogViewer(SSHBackgroundThreadApp):
         self.prev_tail_command = command
 
         print(f"set tail command to {command}")
-        self.run_ssh_func_persistent(self.config, "tail", self.run_tail_command, command)
+        self.run_ssh_func_persistent(
+            self.config,
+            "tail",
+            self.run_tail_command,
+            self.handle_error,
+            command
+        )
 
 
     def run_tail_command(self, ts, command):

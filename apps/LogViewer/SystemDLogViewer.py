@@ -79,7 +79,7 @@ class SystemDLogViewer(LogViewer):
         start_timestamps = [
             self.run_command(ts,
                 f"systemctl is-active --quiet '{service}' &&" \
-                f"systemctl show --property=ActiveEnterTimestamp --value '{service}'"
+                f"TZ=UTC systemctl show --property=ActiveEnterTimestamp --value '{service}'"
             )
             for service in self.config.services
         ]
