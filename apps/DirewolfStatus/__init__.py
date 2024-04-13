@@ -306,7 +306,7 @@ class DirewolfStatus(LogViewerStatusApp):
     def restart_backend_thread(self):
         if self.aprs_backend_thread:
             ctypes.pythonapi.PyThreadState_SetAsyncExc(
-                ctypes.c_long(self.backend_thread.ident),
+                ctypes.c_long(self.aprs_backend_thread.ident),
                 ctypes.py_object(SystemExit)
             )
 
@@ -345,45 +345,63 @@ class DirewolfStatus(LogViewerStatusApp):
                     parsed = aprslib.parse(pkt)
                     recv_igate(parsed)
                 except aprslib.ParseError as e:
-                    print(e)
+                    self.terminal_view.write(
+                        f"{datetime.datetime.now().strftime('%H:%M:%S')}: invalid APRS packet {e}\n",
+                        colour='red'
+                    )
 
         while True:
             self.data_good("aprs_is", 300.0)
+
             callsign = self.config.aprs_monitor.upper()
 
-            self.terminal_view.write(
-                f"{datetime.datetime.now().strftime('%H:%M:%S')}: Connecting to APRS-IS from Radioconsole\n",
-                colour='brightwhite'
-            )
+            try:
+                self.terminal_view.write(
+                    f"{datetime.datetime.now().strftime('%H:%M:%S')}: Connecting to APRS-IS from Radioconsole\n",
+                    colour='brightwhite'
+                )
 
-            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.connect(("rotate.aprs.net", 14580))
-            s.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
-            banner = s.recv(512).decode("UTF-8").rstrip("\r\n")
-            if banner[0] != "#":
-                print("invalid banner")
-                continue
-            print(f"connected to aprs-is: {banner}")
+                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                s.connect(("rotate.aprs2.net", 14580))
+                s.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+                banner = s.recv(512).decode("UTF-8").rstrip("\r\n")
+                if banner[0] != "#":
+                    print("invalid banner")
+                    continue
+                print(f"connected to aprs-is: {banner}")
 
-            callsign = f"{self.config.aprs_monitor}-{self.config.aprs_ssid}"
-            login = f"user {callsign} pass -1 vers radioconsole 1.0.0 filter p/{callsign}\r\n"
-            s.sendall(login.encode())
+                callsign = f"{self.config.aprs_monitor}-{self.config.aprs_ssid}"
+                login = f"user {callsign} pass -1 vers radioconsole 1.0.0 filter p/{callsign}\r\n"
+                s.sendall(login.encode())
 
-            msg = bytearray()
-            while True:
-                byte = s.recv(1)
-                if len(byte) == 0:
-                    print("socket errored")
-                    break
+                msg = bytearray()
+                while True:
+                    byte = s.recv(1)
+                    if len(byte) == 0:
+                        print("socket errored")
+                        break
 
-                if byte in (b'\r', b'\n'):
-                    if len(msg):
-                        parse(msg.decode('utf-8'))
-                        msg = bytearray()
-                else:
-                    msg += byte
+                    if byte in (b'\r', b'\n'):
+                        if len(msg):
+                            parse(msg.decode('utf-8'))
+                            msg = bytearray()
+                    else:
+                        msg += byte
 
-            self.terminal_view.write(
-                f"{datetime.datetime.now().strftime('%H:%M:%S')}: APRS-IS consumer stopped\n",
-                colour='red'
-            )
+                self.terminal_view.write(
+                    f"{datetime.datetime.now().strftime('%H:%M:%S')}: APRS-IS consumer stopped\n",
+                    colour='red'
+                )
+            except OSError as e:
+                self.terminal_view.write(
+                    f"{datetime.datetime.now().strftime('%H:%M:%S')}: Connection error: {str(e)}\n",
+                    colour='red'
+                )
+                self.data_updated = True
+
+            except EOFError as e:
+                self.terminal_view.write(
+                    f"{datetime.datetime.now().strftime('%H:%M:%S')}: EOF error: {str(e)}\n",
+                    colour='red'
+                )
+                self.data_updated = True
