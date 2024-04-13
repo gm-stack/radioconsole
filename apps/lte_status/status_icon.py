@@ -35,7 +35,7 @@ class lte_status_icon(status_icon):
 
         if 'bands' in data:
             band_text = self.font.render(data['bands'][0]['band'], True, (255,255,255))
-            self.surface.blit(band_text, mode_text.get_rect(topright=(60,0)))
+            self.surface.blit(band_text, mode_text.get_rect(topright=(56,0)))
 
         self.overlay_icon = icon
         super().update()

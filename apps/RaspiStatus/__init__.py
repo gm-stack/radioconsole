@@ -95,8 +95,8 @@ class RaspiStatus(SSHBackgroundThreadApp):
             self.status_icons.append(status_icon.surface)
 
             def handle_error(host, text):
-                self.data[host] = {'status': f"Error: {text}"}
-                self.host_updated[host] = True
+                self.data[host.host] = {'status': f"Error: {text}"}
+                self.host_updated[host.host] = True
                 self.data_updated = True
 
             self.run_ssh_func_persistent(
