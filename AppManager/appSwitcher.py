@@ -94,7 +94,6 @@ class appSwitcher(object):
         self.createAppButton(appname)
 
     def switchFrontmostApp(self, appname, redraw=True):
-        print(f"switching to {appname}")
         if self.FRONTMOST_APP != 'switcher':
             self.running_apps[self.FRONTMOST_APP].backgrounded()
         self.FRONTMOST_APP = appname

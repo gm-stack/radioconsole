@@ -9,3 +9,4 @@ pygame-gui==0.6.9
 paramiko==3.4.0
 pyserial==3.5
 ft5406==0.0.2
+aprslib==0.7.2

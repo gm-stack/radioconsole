@@ -31,7 +31,7 @@ class GPIOShutdown(LogViewerStatusApp):
         self.services = ['gpio_shutdown']
 
         self.shutdown_timer_running = False
-        self.shutdown_timer = -1.0
+        self.shutdown_timer = None
 
         def pin_low(msg, match):
             self.shutdown_timer = float(self.GPIOShutdownConfig.shutdown_time)
@@ -61,7 +61,7 @@ class GPIOShutdown(LogViewerStatusApp):
             self.data_updated = True
 
         def radioconsole_stopped(msg, match):
-            self.shutdown_timer = -1.0
+            self.shutdown_timer = None
             self.shutdown_timer_running = False
             self.update_shutdown_timer("stopped", (0xCC,0xCC,0xCC))
             self.countdown.set_text("--:--.---")
@@ -115,7 +115,11 @@ class GPIOShutdown(LogViewerStatusApp):
         self.data_updated = True
 
     def update_shutdown_timer(self, status, colour):
-        self.countdown.set_text(time_format.mm_ss_fff(self.shutdown_timer))
+        if self.shutdown_timer:
+            countdown_text = time_format.mm_ss_fff(self.shutdown_timer)
+        else:
+            countdown_text = "--:--.---"
+        self.countdown.set_text(countdown_text)
         self.countdown.set_text_colour(colour)
         self.countdown_label.set_text_colour(colour)
         self.status_icon.update(None, self.shutdown_timer, colour, status)

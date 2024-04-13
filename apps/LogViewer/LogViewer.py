@@ -98,7 +98,7 @@ class LogViewer(SSHBackgroundThreadApp):
         self.error_message(text)
 
     def error_message(self, text):
-        self.terminal_view.write(text, colour='red')
+        self.terminal_view.write(text + "\n", colour='red')
         self.data_updated = True
 
     def console_message(self, text):
@@ -116,7 +116,6 @@ class LogViewer(SSHBackgroundThreadApp):
             return
         self.prev_tail_command = command
 
-        print(f"set tail command to {command}")
         self.run_ssh_func_persistent(
             self.config,
             "tail",
@@ -144,7 +143,7 @@ class LogViewer(SSHBackgroundThreadApp):
 
         exit_status = stdout.channel.recv_exit_status()
         msg = f"\nCommand exited with status {exit_status}\n"
-        msg += f"Retrying in {self.logviewer_config.retry_seconds}s\n"
+        msg += f"Retrying in {self.logviewer_config.retry_seconds}s"
         if exit_status == 0:
             self.status_message(msg)
         else:

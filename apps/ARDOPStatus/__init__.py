@@ -134,7 +134,6 @@ class ARDOPStatus(LogViewerStatusApp):
 
         terminal_bounds.top = y
         terminal_bounds.height = (bounds.h + bounds.y) - y - config.command_button_h
-        print(terminal_bounds)
         self.terminal_view.set_bounds(terminal_bounds)
 
         self.data_updated = True

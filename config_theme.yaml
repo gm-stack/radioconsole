@@ -131,3 +131,10 @@ label:
     size: 30
     bold: 0
     regular_path: "ttf/B612-Regular.ttf"
+  '#igate_value':
+    prototype: '#param_value'
+    font:
+      name: "B612Mono"
+      size: 12
+      bold: 0
+      regular_path: "ttf/B612Mono-Regular.ttf"

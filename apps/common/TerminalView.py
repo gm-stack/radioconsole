@@ -43,7 +43,6 @@ class TerminalView():
 
         self.terminal_w = int(self.bounds.w / self.char_w)
         self.terminal_h = int(self.bounds.h / self.char_h)
-        print(f"term init as {self.terminal_w}x{self.terminal_h}, {self.char_w}x{self.char_h} font")
 
 
     def render_char(self, char, colour):
@@ -57,7 +56,6 @@ class TerminalView():
     def precache_font(self):
         global FONT_CACHE
         if not FONT_CACHE:
-            print("precaching font")
             charlist = [chr(x) for x in range(32,128)]
             self.precache_list = {x : self.render_char_colours(x) for x in charlist}
 
@@ -65,7 +63,6 @@ class TerminalView():
             self.char_h = max([x[self.default_colour].get_height() for x in self.precache_list.values()])
             FONT_CACHE = (self.precache_list, self.char_w, self.char_h)
         else:
-            print("using cached font")
             self.precache_list, self.char_w, self.char_h = FONT_CACHE
 
 

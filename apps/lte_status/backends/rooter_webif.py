@@ -23,17 +23,18 @@ class RooterBackend(object):
         )
         if r.status_code == 302:
             self.sysauth = r.cookies['sysauth']
-            print("login success")
+            print("login to ROOTer success")
         else:
             self.sysauth = None
-            print("login failed")
+            print("login to ROOTer failed - check password")
+            # FIXME: report error
 
     def fetch_stats(self):
         if not self.sysauth:
             self.login()
         if self.sysauth:
             r = requests.get(
-                f'http://{self.config.host}:{self.config.port}/cgi-bin/luci/admin/modem/get_csq', 
+                f'http://{self.config.host}:{self.config.port}/cgi-bin/luci/admin/modem/get_csq',
                 cookies={'sysauth': self.sysauth},
                 timeout=5
             )
@@ -45,7 +46,7 @@ class RooterBackend(object):
         else:
             return {'mode': 'Login failed, retrying...'}
             self.login()
-    
+
     def reboot_modem(self):
         if not self.sysauth:
             self.login()
@@ -56,7 +57,7 @@ class RooterBackend(object):
                 timeout=5
             )
             token = self.TOKEN_REGEX.search(r.text).groups()[0]
-            
+
             r = requests.post(
                 f'http://{self.config.host}:{self.config.port}/cgi-bin/luci/admin/system/reboot/call',
                 cookies={'sysauth': self.sysauth},
@@ -93,14 +94,14 @@ class RooterBackend(object):
             })
 
         return res
-    
+
     @classmethod
     def csq_to_dbm(cls, csq):
         try:
             return str(-113 + (int(csq) * 2))
         except ValueError:
             return ''
-    
+
     @classmethod
     def parse_earfcns(cls, channel):
         try:
