@@ -123,6 +123,9 @@ modules:
     display_name: Direwolf Controls
     config:
       host: 172.17.0.3
+      aprs_monitor: N0CALL
+      aprs_ssid: 15
+      tx_issue_time: 900
 
   direwolf_config:
     type: systemd_log_viewer
