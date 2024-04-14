@@ -97,10 +97,6 @@ modules:
       - host: 172.16.0.29    # you can have multiple hosts
 ```
 
-More than one host is supported:
-
-![raspi status](doc/status_2_hosts.png)
-
 ## LTE Status
 
 ![lte status](doc/lte_status.png)
@@ -198,13 +194,17 @@ modules:
 
 ## SystemD Log Viewer
 
+![systemd log viewer](doc/systemd_log_viewer.png)
+
 Like the above log viewer but much more customised for SystemD logs.
 
-This log viewer constructs the `journalctl` command to view the log in JSON format, and then parses the JSON from the remote end to have better control over how the log entries are formatted. Timestamps are printed with a date if they are not from today, and without the date if they are (to save space).
+This log viewer constructs the `journalctl` command to view the log in JSON format, and then parses the JSON from the remote end to have better control over how the log entries are formatted. Log entries have a date/time if they are prior to today, and with only a time if they are from today.
 
-Optionally, showing the service name can be disabled.
+Showing the server name is on by default if there is more than one service, otherwise off. This can be overridden.
 
-The command buttons function identically.
+For all services running, the start time of that service will be determined. All logs will be tailed from the earliest started currently running service. If no services are running, it will load the most recent 100 lines by default, but this is configurable.
+
+The command buttons and configuration function identically to the [log_viewer](#log-viewer).
 
 `filter_lines` regexes are checked against the parsed message output, not the JSON.
 
@@ -217,7 +217,7 @@ modules:
       host: 172.17.0.3         # Host to SSH to
       username: pi             # [Optional] Username, defaults to 'pi'
       port: 22                 # [Optional] SSH Port, defaults to 22
-      services:                # List of services, without the '.service' to tail logs for
+      services:                # List of services (without the '.service') to tail logs for
         - pat
         - ardopc
         - rigctld
@@ -228,6 +228,7 @@ modules:
         - test                 #            the log line will not be printed.
                                #            Use instead of piping to grep -v
       retry_seconds: 5         # [Optional] if command exits, re-run in, default 5
+      lookback: 500            # [Optional] number of lines to look back if no services runnning, default 100
       max_scrollback: 50000    # [Optional] number of bytes of scrollback, default 50000
       command_buttons_x: 5     # [Optional] number of bottom command buttons per row
                                #            defaults to number of commands
@@ -240,6 +241,8 @@ modules:
 
 ## SystemD Status
 
+![systemd status](doc/systemd_status.png)
+
 Connects to a remote host and queries the state of running services.
 
 For provided services, will show:
@@ -248,14 +251,14 @@ For provided services, will show:
 - Run state of service (running, dead)
 - Activity state of service (active, inactive, disabled, activating, failed)
 
-There are also buttons to query the status of the service (appearing in a terminal window at the bottom), and to start/stop the service.
+For each, there is a button to check the `status` of the service (appearing in the terminal view at the bottom), and to start/stop the service.
 
-A status icon shows the number of services that are running out of the listed number of services, and a count of services in the errored state.
+A status icon shows the number of services that are running (out of the listed of services), and a number of services in the errored state.
 
 The following warnings show on the status icon:
 
-- Orange warning symbol: One or more services are in a failed state.
-- Red warning symbol: The remote host cannot be connected to.
+- Orange warning symbol: One or more services are running, but in a state other than "active". This indicates they are starting (at which point the warning will go away) or are constantly trying and failing to start.
+- Red warning symbol: The remote host cannot be connected to or there was an error retrieving the service status.
 
 ```yaml
 modules:
@@ -280,7 +283,15 @@ modules:
 
 ## GPIO Shutdown status
 
-Connects to a remote host and monitors the state of `gpio_shutdown` - getting the current countdown timer out of the SystemD logs.
+![gpio shutdown status](doc/gpio_shutdown.png)
+
+Connects to a remote host and monitors the state of `gpio_shutdown` - getting the current countdown timer out of the SystemD logs, and providing a large dramatic countdown to how long until the Pi switches off.
+
+A smaller, less dramatic countdown is also provided in the status icon.
+
+The countdown turns red when <30 seconds remain.
+
+The option `shutdown_time` defaults to 300 seconds, the same value `gpio_shutdown` is configured to by default. It should be set to the same value here to have the initial countdown be the correct value, but if it's not correct, the countdown will be corrected as soon as it starts and the actual value is logged.
 
 ```yaml
 modules:
@@ -291,25 +302,28 @@ modules:
       host: 172.17.0.3         # Host to SSH to
       username: pi             # [Optional] Username, defaults to 'pi'
       port: 22                 # [Optional] SSH Port, defaults to 22
+      shutdown_time: 300       # [Optional] The shutdown time that gpio_shutdown is configured for, default 300
 ```
 
 ## GPS Status
 
-Connects to a GPSd server. For some info on how to get GPSd to behave properly, [see here](carpi-notes/gpsd-difficulties.md)
+![gps status](doc/gps.png)
 
-Shows the following:
+Connects to a GPSd server. For some info on how to get GPSd to behave properly with other serial devices like radios, and how to make it actually listen on the network when configured to do so, [see here](carpi-notes/gpsd-difficulties.md)
 
-- Satellites being seen/used by constellation
-- Satellite positions / Current heading on compass-like view
+Shows the following (same stuff you usually get in a GPS viewer...)
+
+- Satellites being seen and which are used, sorted by constellation
+- Satellite positions and current heading direction on compass-like view (rotated to current direction of travel being up)
 - Current lat/lon
 - Current altitude
-- Fix type
+- Current fix type (2D/3D)
 - Number of sats used
 - Current speed
 - Current track (relative to True North)
 - 8 character [Maidenhead grid reference](https://en.wikipedia.org/wiki/Maidenhead_Locator_System)
 
-Shown on the status icon:
+Shown on the status icon (rightmost in the screenshot):
 
 - Satellites used
 - Fix type
@@ -317,7 +331,7 @@ Shown on the status icon:
 
 The following warnings show on the status icon:
 
-- Orange warning symbol: GPS has no fix.
+- Orange warning symbol: GPSd is connected but the GPS has no fix.
 - Red warning symbol: GPSd server cannot be connected to.
 
 ```yaml
@@ -328,6 +342,84 @@ modules:
     config:
       host: 172.17.0.3  # GPSd host
       port: 2947        # [Optional] GPSd port, default 2947
+```
+
+## ARDOP Status
+
+![ARDOP status](doc/ardop_status.png)
+
+TODO: get a better screenshot - where it's actually active.
+
+ARDOP (Amateur Radio Digital Open Protocol) is a free and open source alternative to commercial HF data modems such as PACTOR and Vara, primarily used for Winlink email over HF.
+
+This module tails the logs from it (you'll need it running as a SystemD service) and displays the current modem state and status as the connection progresses. At some point there will be a websocket interface into ARDOP to get better connection stats and a signal constellation graph, this will be implemented here at that point.
+
+Hint: use [Peter LaRue KG4JJA's fork of ardop: ardopcf](https://github.com/pflarue/ardop) which is in active development.
+
+Config assumes that the SystemD service it is running as is `ardopc`.
+
+```yaml
+  ardop:
+    type: ardop_status
+    display_name: ARDOP Controls
+    config:
+      host: 172.17.0.3 # host
+      username: pi  # [Optional] Username
+      port: 22      # [Optional] SSH port
+```
+
+## Direwolf Status
+
+![Direwolf status](doc/direwolf_status.png)
+
+Direwolf is an APRS modem and client.
+
+This module tails the logs from it (you'll need it running as a SystemD service) and shows some stats:
+
+- Current input audio level
+- last RX'd packet
+  - signal level
+  - how long ago
+- Last TX'd packet via APRS-IS
+  - how long ago
+  - what APRS-IS server is currently connected
+- Last TX'd packet via RF
+  - how long ago
+  - whether it was iGated (via radioconsole having connection to APRS-IS)
+  - which stations have previously heard us
+    - how long ago
+    - how many packets have been heard via that station
+
+Note that the station that is reported as having iGated you is not necessarily the only station that did so - just the first that got it into APRS-IS. Subsequent reports are then de-duplicated. Unfortunately there's no better way of handling that unless the individual iGates provide a method to retrieve this info.
+
+The status icon shows:
+
+- minutes/seconds since last received packet (not hours:minutes:seconds like the main UI)
+- minutes/seconds since last igate sent packet
+- minutes/seconds since last RF sent packet. Green if reception confirmed via APRS-IS, orange if not.
+
+The following alert conditions appear on the icon:
+
+- Orange: No RF transmission heard for `tx_issue_time` seconds.
+- Red: Cannot connect to Direwolf logs via SSH.
+
+Being unable to connect to APRS-IS is not treated as an error - you are running APRS over the radio because you might not have internet, right? The intent of the APRS-IS connection being used to receive your own RF packets via the internet is just to confirm whether the RF side is working, when you have a connection.
+
+Hint: use [xssfox's fork of Direwolf: Direwuff](https://github.com/xssfox/direwuff) which has a bunch of fixes for a bunch of issues (and a much better icon!).
+
+Config assumes that the SystemD service it is running as is `ardopc`.
+
+```yaml
+  ardop:
+    type: direwolf_status
+    display_name: Direwolf Status
+    config:
+      host: 172.17.0.3 # host
+      username: pi  # [Optional] Username
+      port: 22      # [Optional] SSH port
+      aprs_monitor: N0CALL   # Callsign for RF monitoring. Should be set to what you TX as on RF.
+      aprs_ssid: 15          # APRS SSID to monitor. Should be set to match what you TX as on RF.
+      tx_issue_time: 900     # Seconds after which there is a problem if no packet has been TX'd for.
 ```
 
 ## Waterfall Display
