@@ -6,6 +6,7 @@ import serial
 
 class civ(object):
     last_freq = 0
+    pending_freq = None
     backend_thread = None
 
     def __init__(self, config, callback):
