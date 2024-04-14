@@ -1,6 +1,6 @@
 import os
 
-from ..bands import band_edges_for_frequency
+import bands
 
 from . import civ
 from . import dummy
@@ -26,5 +26,5 @@ class RadioSettings(object):
 
     def callback(self, settings):
         if self.settings['freq'] != settings['freq']:
-            self.settings['band'] = band_edges_for_frequency(settings['freq'])
+            self.settings['band'] = bands.band_edges_for_frequency(settings['freq'])
         self.settings.update(settings)
