@@ -1,10 +1,12 @@
 import os
 
 from . import civ
+from . import dummy
 
 class RadioSettings(object):
     SettingsProviders = {
-        'ci-v': civ.civ
+        'ci-v': civ.civ,
+        'dummy': dummy.dummy
     }
 
     settings = {
@@ -17,7 +19,7 @@ class RadioSettings(object):
                 f"unknown frequency source {provider}, "
                 f"supported providers are {self.SettingsProviders.keys()}"
             )
-        
+
         self.output_path = os.path.join(config.output_path, 'radio/')
         print(f"settings output path {self.output_path}")
         try:
@@ -26,7 +28,7 @@ class RadioSettings(object):
             pass
 
         self.provider = self.SettingsProviders[provider](config, self.callback)
-    
+
     def callback(self, settings):
         if self.settings['freq'] != settings['freq']:
             self.writeout()
@@ -34,7 +36,7 @@ class RadioSettings(object):
 
     def freq(self):
         return self.settings['freq']
-    
+
     def write_setting(self, setting):
         f = open(os.path.join(self.output_path, setting),'w')
         f.write(f"{self.settings[setting]}")

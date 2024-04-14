@@ -70,7 +70,7 @@ Items queried are:
     - OK: This condition has not yet happened
 - CPU load (per core)
 
-In the status icon, the following are displayed:
+In the status icon (2nd and 3rd from left, one per host), the following are displayed:
 
 - hostname
 - CPU temperature
@@ -135,7 +135,7 @@ There is also a button in the top right to reboot the entire ROOTer box - this u
 
 There is also a log that shows when the LTE channel/band changes, when the mode changes, and when the LAC changes.
 
-In the status icon, the following is displayed:
+In the status icon (2nd from right), the following is displayed:
 
 - Mode (LTE / UMTS / HSDPA)
 - Band (e.g. B28)
@@ -253,7 +253,7 @@ For provided services, will show:
 
 For each, there is a button to check the `status` of the service (appearing in the terminal view at the bottom), and to start/stop the service.
 
-A status icon shows the number of services that are running (out of the listed of services), and a number of services in the errored state.
+A status icon (leftmost) shows the number of services that are running (out of the listed of services), and a number of services in the errored state.
 
 The following warnings show on the status icon:
 
@@ -287,7 +287,7 @@ modules:
 
 Connects to a remote host and monitors the state of `gpio_shutdown` - getting the current countdown timer out of the SystemD logs, and providing a large dramatic countdown to how long until the Pi switches off.
 
-A smaller, less dramatic countdown is also provided in the status icon.
+A smaller, less dramatic countdown is also provided in the status icon (3rd from right).
 
 The countdown turns red when <30 seconds remain.
 
@@ -398,7 +398,7 @@ The status icon shows:
 - minutes/seconds since last igate sent packet
 - minutes/seconds since last RF sent packet. Green if reception confirmed via APRS-IS, orange if not.
 
-The following alert conditions appear on the icon:
+The following alert conditions appear on the status icon (2nd from left):
 
 - Orange: No RF transmission heard for `tx_issue_time` seconds.
 - Red: Cannot connect to Direwolf logs via SSH.

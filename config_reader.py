@@ -12,6 +12,9 @@ with open(os.path.join(currpath, 'config.yaml')) as f:
 with open(os.path.join(currpath, 'config_theme.yaml')) as f:
     _theme = yaml.safe_load(f)
 
+with open(os.path.join(currpath, 'config_waterfall_server.yaml')) as f:
+    _waterfall_server = yaml.safe_load(f)
+
 theme = tempfile.NamedTemporaryFile(mode='w')
 json.dump(_theme, theme)
 theme.flush()
@@ -32,7 +35,7 @@ system_switcher.update(_config['system'].get('switcher', {}))
 
 class cfg:
     waterfall_server = SimpleNamespace(
-        **_config.get('waterfall_server', {})
+        **_waterfall_server.get('waterfall_server', {})
     )
     display = SimpleNamespace(
         **system_display,

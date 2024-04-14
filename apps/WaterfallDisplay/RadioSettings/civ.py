@@ -9,7 +9,7 @@ class civ(object):
     backend_thread = None
 
     def __init__(self, config, callback):
-        self.s = serial.Serial('/dev/icomA', 19200)
+        self.s = serial.Serial(config.icom_serial_port, int(config.icom_serial_baud))
         self.s.write(b"\xFE\xFE\x88\x00\x03\xFD")
 
         self.callback = callback
@@ -21,7 +21,7 @@ class civ(object):
     def parse_packet(self, packet):
         def bcd(byte):
             return f"{(byte & 0xF0) >> 4}{byte & 0x0F}"
-        
+
         if not packet[0:2] == b'\xfe\xfe':
             print("invalid start")
             return
@@ -31,14 +31,14 @@ class civ(object):
         if dst != 0x00:
             print("dst not 0x00")
             return
-        
+
         cmd = packet[4]
         data = packet[5:-1]
 
         if not packet[-1] == 0xFD:
             print("invalid end")
             return
-        
+
         if cmd == 0x00 or cmd == 0x03: # frequency
             self.last_freq = int("".join([bcd(b) for b in data[::-1]]))
             self.callback({'freq': self.last_freq})
@@ -55,8 +55,8 @@ class civ(object):
                 if b == b'\xfd':
                     self.parse_packet(packet)
                     packet = bytes()
-                
-    
+
+
     def freq(self):
         return self.last_freq
 

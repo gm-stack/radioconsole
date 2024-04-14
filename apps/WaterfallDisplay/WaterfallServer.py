@@ -84,7 +84,7 @@ class FFTWaterfall(object):
 
                 fft = self.rf.fft(self.num_fft_bins)[::-1][leftside_bin:leftside_bin+self.output_w]
 
-        
+
         fft = (fft - self.RF_MIN) / (self.RF_MAX - self.RF_MIN)
 
         headroom = (0.5 - max(fft))
@@ -95,16 +95,16 @@ class FFTWaterfall(object):
 
 def parse_cmd_buffer(cmd_buffer):
     global fft_via_udp
-    
+
     d = struct.unpack('!BBxxxxxxxxxxxxxxxxxxxxxx', cmd_buffer)
     ver, msg = d
     if ver != 0x00:
         raise ValueError(f"invalid message: ver:{ver}, msg:{msg}")
-    
+
     if msg == 0x00:
         d = struct.unpack('!BBHIBBxxxxxxxxxxxxxx', cmd_buffer)
         _, _, output_w, relbw, absmode, decimate_zoom = d
-    
+
         fft.output_w = output_w
         fft.rel_bandwidth = relbw
         fft.absmode = bool(absmode)
@@ -119,7 +119,7 @@ def parse_cmd_buffer(cmd_buffer):
             fft_via_udp = False
             print("Stopping UDP mode")
     print(d)
-    
+
 
 def send_fft_line():
     global CURRENT_FREQ, fft_via_udp
@@ -164,7 +164,7 @@ def handle_conn(conn, addr):
             timesince = time.monotonic() - prev_sampletime
             if timesince < sample_every:
                 time.sleep(sample_every - timesince)
-            
+
             try:
                 send_fft_line()
             except (BrokenPipeError, ConnectionResetError, BlockingIOError):

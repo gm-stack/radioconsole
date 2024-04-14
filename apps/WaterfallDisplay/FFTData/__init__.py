@@ -30,7 +30,7 @@ class FFTData(object):
 
         self.last_window_size = None
         self.window = None
-    
+
     def retune(self, *args, **kwargs):
         self.provider.retune(*args, **kwargs)
 
