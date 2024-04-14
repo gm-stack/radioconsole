@@ -22,6 +22,9 @@ class civ(object):
         def bcd(byte):
             return f"{(byte & 0xF0) >> 4}{byte & 0x0F}"
 
+        def parse_bcd(payload):
+            return int("".join([bcd(b) for b in payload[::-1]]))
+
         print(f"\n{packet.hex()}")
 
         if not packet[0:2] == b'\xfe\xfe':
@@ -29,10 +32,6 @@ class civ(object):
             return
         dst = packet[2]
         src = packet[3]
-
-        if src != 0x88:
-            print(f"src is 0x{src:2x}, not 0x88")
-            return
 
         cmd = packet[4]
         data = packet[5:-1]
@@ -42,12 +41,33 @@ class civ(object):
             return
 
         try:
+            pending_freq, pending_src = self.pending_freq
+            self.pending_freq = None
+
             if cmd == 0x00 or cmd == 0x03: # frequency
-                self.last_freq = int("".join([bcd(b) for b in data[::-1]]))
+                if src != 0x88:
+                    print(f"src is 0x{src:2x}, not 0x88")
+                    return
+                self.last_freq = parse_bcd(data)
                 print(f"last_freq {self.last_freq}Hz")
+                self.callback({'freq': self.last_freq})
+            elif cmd == 0x05:
+                if dst != 0x88:
+                    print("dst != 0x88")
+                    return
+                self.pending_freq = (parse_bcd(data), src)
+            elif cmd == 0xFB:
+                if src != 0x88:
+                    print("src != 0x88")
+                    return
+                if pending_src != dst:
+                    print("wrong dst for 0xFB")
+                    return
+                self.last_freq = pending_freq
                 self.callback({'freq': self.last_freq})
             else:
                 print(f"CI-V: unknown command 0x{cmd:x}")
+
         except Exception as e:
             print(f"exception {e} parsing packet")
             pass
