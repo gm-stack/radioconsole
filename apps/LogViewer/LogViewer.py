@@ -158,7 +158,7 @@ class LogViewer(SSHBackgroundThreadApp):
             res = self.run_command(ts, command)
             self.console_message_onceonly(res)
 
-        self.run_ssh_func_single(self.config, run_cmd, command=command)
+        self.run_ssh_func_single(self.config, run_cmd, self.handle_error, command=command)
 
     def update(self, dt):
         if super().update(dt):

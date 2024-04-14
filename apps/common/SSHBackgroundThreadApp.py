@@ -37,13 +37,13 @@ class SSHBackgroundThreadApp(app):
         )
         self.backend_threads[thread_name].start()
 
-    def run_ssh_func_single(self, host, func, *args, **kwargs):
+    def run_ssh_func_single(self, host, func, error_func, *args, **kwargs):
         # run a function once in a SSH session which should run once an dexit
 
         # monitors for an exception and raises it on main thread
         # but does not bring everything down if thread exits
         def _run_single_func(self):
-            self._command_backend_thread(host, func, onceonly=True, *args, **kwargs)
+            self._command_backend_thread(host, func, error_func, onceonly=True, *args, **kwargs)
 
         th = threading.Thread(
             target=crash_handler.monitor_thread_exception(_run_single_func),
