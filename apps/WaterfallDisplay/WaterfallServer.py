@@ -3,7 +3,6 @@ signal.signal(signal.SIGHUP, lambda s, f: None)
 # pylint: disable=wrong-import-position
 
 import socket
-from types import SimpleNamespace
 import sys
 
 import FFTData
@@ -12,16 +11,12 @@ import time
 import struct
 import rtlsdr
 
-import bands
+PROTOCOL_VERSION = 0x01
 
 sys.path.append('../..')
 from config_reader import cfg
 
 port = cfg.waterfall_server.listen_port
-
-CURRENT_FREQ = 7100000
-
-fft_via_udp = False
 
 class FFTWaterfall(object):
     def __init__(self):
@@ -39,9 +34,6 @@ class FFTWaterfall(object):
         self.num_fft_bins = None
         self.display_bandwidth = None
         self.absmode = False
-        self.abs_freq_low = 7000000
-        self.abs_freq_high = 7300000
-        self.rel_bandwidth = 1250000
 
         self.RF_MIN = 0
         self.RF_MAX = 127
@@ -53,17 +45,16 @@ class FFTWaterfall(object):
         self.rf.retune(if_freq, sample_rate)
         self.sample_rate = sample_rate
 
-    def fft(self):
+    def fft(self, centre_freq, abs_freq_low, abs_freq_high):
         total_fft_bw = self.sample_rate
         if self.absmode: # absolute frequency display
-            self.display_bandwidth = self.abs_freq_high - self.abs_freq_low
+            self.display_bandwidth = abs_freq_high - abs_freq_low
             self.num_fft_bins = int((total_fft_bw / self.display_bandwidth) * self.output_w)
 
-            centre_freq = CURRENT_FREQ
             centre_bin = self.num_fft_bins // 2
             hz_per_pixel = total_fft_bw / float(self.num_fft_bins)
 
-            leftside_bin = centre_bin + int((self.abs_freq_low - centre_freq) / hz_per_pixel)
+            leftside_bin = centre_bin + int((abs_freq_low - centre_freq) / hz_per_pixel)
 
             fft = self.rf.fft(self.num_fft_bins)[::-1][leftside_bin:leftside_bin+self.output_w]
         else:
@@ -75,7 +66,6 @@ class FFTWaterfall(object):
             else:
                 self.num_fft_bins = int((total_fft_bw / self.display_bandwidth) * self.output_w)
 
-                centre_freq = CURRENT_FREQ
                 centre_bin = self.num_fft_bins // 2
                 hz_per_pixel = total_fft_bw / float(self.num_fft_bins)
 
@@ -93,55 +83,56 @@ class FFTWaterfall(object):
 
         return fft * 255
 
-def parse_cmd_buffer(cmd_buffer):
-    global fft_via_udp
-
-    d = struct.unpack('!BBxxxxxxxxxxxxxxxxxxxxxx', cmd_buffer)
-    ver, msg = d
-    if ver != 0x00:
-        raise ValueError(f"invalid message: ver:{ver}, msg:{msg}")
-
-    if msg == 0x00:
-        d = struct.unpack('!BBHIBBxxxxxxxxxxxxxx', cmd_buffer)
-        _, _, output_w, relbw, absmode, decimate_zoom = d
-
-        fft.output_w = output_w
-        fft.rel_bandwidth = relbw
-        fft.absmode = bool(absmode)
-        fft.decimate_zoom = bool(decimate_zoom)
-    elif msg == 0x01:
-        d = struct.unpack('!BBHxxxxxxxxxxxxxxxxxxxx', cmd_buffer)
-        _, _, port = d
-        if port != 0:
-            fft_via_udp = True
-            print("Switching to UDP mode")
-        else:
-            fft_via_udp = False
-            print("Stopping UDP mode")
-    print(d)
-
-
-def send_fft_line():
-    global CURRENT_FREQ, fft_via_udp
-    CURRENT_FREQ = fft.rs.freq()
-    header = struct.pack('!BBI', 0x00, 0x01, CURRENT_FREQ)
-    fftd = fft.fft().astype('uint8').tobytes()
-    if fft_via_udp:
-        s = u.sendto(header+fftd, (addr[0], 45362))
-        if s != len(header+fftd):
-            print(f"udp send failed, only {s} bytes sent")
-    else:
-        conn.sendall(header+fftd)
-
 MAXRATE = 30
 sample_every = 1.0 / MAXRATE
+
 def handle_conn(conn, addr):
-    global fft_via_udp
     conn.setblocking(0)
     prev_sampletime = 0
     cmd_buffer = bytes()
     got_initial_config = False
     fft_via_udp = False
+
+    def parse_cmd_buffer(cmd_buffer):
+        nonlocal fft_via_udp
+        d = struct.unpack('!BBxxxxxxxxxxxxxxxxxxxxxx', cmd_buffer)
+        ver, msg = d
+        if ver != PROTOCOL_VERSION:
+            print(f"protocol version not matched: {ver} != {PROTOCOL_VERSION}")
+            return
+
+        if msg == 0x00:
+            d = struct.unpack('!BBHIBBxxxxxxxxxxxxxx', cmd_buffer)
+            _, _, output_w, relbw, absmode, decimate_zoom = d
+
+            fft.output_w = output_w
+            fft.rel_bandwidth = relbw
+            fft.absmode = bool(absmode)
+            fft.decimate_zoom = bool(decimate_zoom)
+        elif msg == 0x01:
+            d = struct.unpack('!BBHxxxxxxxxxxxxxxxxxxxx', cmd_buffer)
+            _, _, port = d
+            if port != 0:
+                fft_via_udp = True
+                print("Switching to UDP mode")
+            else:
+                fft_via_udp = False
+                print("Stopping UDP mode")
+        print(d)
+
+    def send_fft_line():
+        nonlocal fft_via_udp
+        freq = fft.rs.settings['freq']
+        band_low, band_high = fft.rs.settings['band']
+        header = struct.pack('!BBIII', 0x00, 0x01, freq, band_low, band_high)
+        fftd = fft.fft(freq, band_low, band_high).astype('uint8').tobytes()
+        if fft_via_udp:
+            s = u.sendto(header+fftd, (addr[0], 45362))
+            if s != len(header+fftd):
+                print(f"udp send failed, only {s} bytes sent")
+        else:
+            conn.sendall(header+fftd)
+
 
     while True:
         try:

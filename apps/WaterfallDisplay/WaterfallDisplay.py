@@ -10,12 +10,11 @@ from pygame import surface
 import pygame_gui
 
 import crash_handler
-
 from AppManager.app import app
-
 from . import turbo_colormap
-
 from util import stat_display
+
+PROTOCOL_VERSION = 0x01
 
 class WaterfallDisplay(app):
     default_config = {
@@ -179,7 +178,7 @@ class WaterfallDisplay(app):
         self.waterfall_surf.unlock()
 
         screen.blit(self.waterfall_surf, (self.X, self.WF_Y), area=(0, 0, self.W, self.WF_H))
-    
+
     def freq_to_x(self, freq):
         if self.absmode:
             centre_freq = (self.abs_freq_low + self.abs_freq_high) // 2
@@ -260,7 +259,7 @@ class WaterfallDisplay(app):
         try:
             d = struct.pack(
                 '!BBHIBBxxxxxxxxxxxxxx', # 24 bytes
-                0x00, # version
+                PROTOCOL_VERSION, # version
                 0x00, # message (parameters)
                 self.bounds.w,
                 self.rel_bandwidth,
@@ -270,7 +269,7 @@ class WaterfallDisplay(app):
             self.socket.sendall(d)
             d = struct.pack(
                 '!BBHxxxxxxxxxxxxxxxxxxxx', # 24 bytes
-                0x00, # version
+                PROTOCOL_VERSION, # version
                 0x01, # message (switch to UDP) todo: make configurable
                 45362 # port
             )
@@ -308,12 +307,12 @@ class WaterfallDisplay(app):
                             except select.error:
                                 self.set_net_status('Reconnecting...')
                                 raise OSError("Disconnected")
-                            
+
                             if self.in_background:
                                 print("disconnecting")
                                 d = struct.pack(
                                     '!BBHxxxxxxxxxxxxxxxxxxxx', # 24 bytes
-                                    0x00, # version
+                                    PROTOCOL_VERSION, # version
                                     0x01, # message (switch to UDP) todo: make configurable
                                     0 # disable UDP send
                                 )
@@ -325,11 +324,15 @@ class WaterfallDisplay(app):
 
                         if not self.connected:
                             break
-                        
-                        d = struct.unpack("!BBI", data[:6])
-                        ver, msg, freq = d
+
+                        d = struct.unpack("!BBIII", data[:14])
+                        ver, msg, freq, band_low, band_high = d
+                        if ver != PROTOCOL_VERSION:
+                            raise ValueError(f"protocol version not matched: {ver} != {PROTOCOL_VERSION}")
                         if msg == 0x01:
                             self.current_freq = freq
+                            self.abs_freq_low = band_low
+                            self.abs_freq_high = band_high
                             self.fft_queue.put_nowait(data[6:])
 
                 except OSError as e:
@@ -337,7 +340,7 @@ class WaterfallDisplay(app):
                     print(str(e))
                     self.set_net_status(str(e))
             time.sleep(1)
-    
+
     @crash_handler.monitor_thread
     def udp_backend_loop(self):
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as u:
@@ -408,4 +411,4 @@ class WaterfallDisplay(app):
     def foregrounded(self):
         self.in_background = False
 
-    
+
