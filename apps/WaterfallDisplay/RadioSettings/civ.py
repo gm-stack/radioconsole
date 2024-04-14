@@ -46,7 +46,8 @@ class civ(object):
                 self.callback({'freq': self.last_freq})
             else:
                 print(f"CI-V: unknown command 0x{cmd:x}")
-        except struct.error:
+        except Exception as e:
+            print(f"exception {e} parsing packet")
             pass
 
 
