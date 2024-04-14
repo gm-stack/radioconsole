@@ -22,6 +22,8 @@ class civ(object):
         def bcd(byte):
             return f"{(byte & 0xF0) >> 4}{byte & 0x0F}"
 
+        print(f"{packet.hex()}")
+
         if not packet[0:2] == b'\xfe\xfe':
             print("invalid start")
             return
@@ -34,8 +36,6 @@ class civ(object):
 
         cmd = packet[4]
         data = packet[5:-1]
-
-        print(f"{packet.hex()}")
 
         if not packet[-1] == 0xFD:
             print("invalid end")
