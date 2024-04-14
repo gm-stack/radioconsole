@@ -22,7 +22,7 @@ class civ(object):
         def bcd(byte):
             return f"{(byte & 0xF0) >> 4}{byte & 0x0F}"
 
-        print(f"{packet.hex()}")
+        print(f"\n{packet.hex()}")
 
         if not packet[0:2] == b'\xfe\xfe':
             print("invalid start")
@@ -44,6 +44,7 @@ class civ(object):
         try:
             if cmd == 0x00 or cmd == 0x03: # frequency
                 self.last_freq = int("".join([bcd(b) for b in data[::-1]]))
+                print(f"last_freq {self.last_freq}Hz")
                 self.callback({'freq': self.last_freq})
             else:
                 print(f"CI-V: unknown command 0x{cmd:x}")
