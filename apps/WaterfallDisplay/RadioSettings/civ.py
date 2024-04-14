@@ -42,7 +42,7 @@ class civ(object):
             return
 
         try:
-            pending_freq, pending_src = self.pending_freq
+            pending_freq, pending_src = self.pending_freq if self.pending_freq else (None, None)
             self.pending_freq = None
 
             if cmd == 0x00 or cmd == 0x03: # frequency
@@ -64,8 +64,9 @@ class civ(object):
                 if pending_src != dst:
                     print("wrong dst for 0xFB")
                     return
-                self.last_freq = pending_freq
-                self.callback({'freq': self.last_freq})
+                if pending_freq:
+                    self.last_freq = pending_freq
+                    self.callback({'freq': self.last_freq})
             else:
                 print(f"CI-V: unknown command 0x{cmd:x}")
 
