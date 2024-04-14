@@ -14,7 +14,17 @@ class appManager(object):
         print(f"Registered {name}: {appclass}")
         self.available_apps[name] = appclass
 
-    def instantiate_apps(self, status_cb):
+    def instantiate_apps(self, status_cb, only=None):
+        if only:
+            modules = {
+                m:c for m,c in cfg.modules.items()
+                if c.display_name == only
+            }
+            if len(modules) == 0:
+                print(f"Error: No module '{only}' found, modules defined in config are: ")
+                print("\n".join([f"- {c.display_name}" for m,c in cfg.modules.items()]))
+                exit()
+            cfg.modules = modules
         for appname, appcfg in cfg.modules.items():
             if appcfg.type not in self.available_apps:
                 raise NotImplementedError(
@@ -23,7 +33,7 @@ class appManager(object):
             status_cb(f"init {appname}")
 
             app_class = self.available_apps[appcfg.type]
-            
+
             instance_config = app_class.default_config.copy()
             instance_config.update(appcfg.config)
 

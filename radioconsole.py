@@ -50,10 +50,11 @@ try:
     am.register_app('direwolf_status', apps.DirewolfStatus)
 
     splash.update_status("instantiating apps")
-    am.instantiate_apps(splash.update_status)
     if len(sys.argv) > 1:
+        am.instantiate_apps(splash.update_status, only=sys.argv[1])
         sw.switchFrontmostApp(sys.argv[1])
     else:
+        am.instantiate_apps(splash.update_status)
         sw.switchFrontmostApp('switcher')
 
     clock = pygame.time.Clock()

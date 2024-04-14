@@ -13,10 +13,13 @@ class GPIOShutdown(LogViewerStatusApp):
         "retry_seconds": 5,
         "max_scrollback": 50000,
         "command_button_h": 48,
-        "command_buttons_x": 0,
+        "command_buttons_x": 2,
         "command_button_margin": 2,
         "filter_lines": [],
-        "commands": [],
+        "commands": {
+            'Enable GPIO Shutdown': 'sudo service gpio_shutdown start',
+            'Disable GPIO Shutdown': 'sudo service gpio_shutdown stop'
+        },
         "show_service_name": None,
         "shutdown_time": 300
     }

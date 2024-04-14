@@ -24,12 +24,10 @@ class LogViewerStatusApp(SystemDLogViewer):
         self.LogViewerStatusConfig = config
 
         config.services = self.services
-        config.commands = {}
         config.show_service_name = False
         config.retry_seconds = 5
         config.max_scrollback = 50000
         config.command_button_h = 48
-        config.command_buttons_x = 1
         config.command_button_margin = 2
         config.lookback = 100
 

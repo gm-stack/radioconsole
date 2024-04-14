@@ -28,12 +28,13 @@ class civ(object):
         dst = packet[2]
         src = packet[3]
 
-        if dst != 0x00:
-            print(f"dst is 0x{dst:2x}, not 0x00")
-            return
+        if src != 0x88:
+            print(f"src is 0x{src:2x}, not 0x88")
 
         cmd = packet[4]
         data = packet[5:-1]
+
+        print(f"{packet.hex()}")
 
         if not packet[-1] == 0xFD:
             print("invalid end")
