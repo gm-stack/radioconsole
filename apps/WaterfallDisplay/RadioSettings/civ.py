@@ -30,6 +30,7 @@ class civ(object):
 
         if src != 0x88:
             print(f"src is 0x{src:2x}, not 0x88")
+            return
 
         cmd = packet[4]
         data = packet[5:-1]
