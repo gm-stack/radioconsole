@@ -39,7 +39,7 @@ class cfg:
     )
     display = SimpleNamespace(
         **system_display,
-        size=(system_display['display_w'], system_display['display_h'])
+        size=(system_display.get('display_w'), system_display.get('display_h'))
     )
     switcher = SimpleNamespace(**system_switcher)
     modules = {}
