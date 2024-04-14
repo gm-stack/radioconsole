@@ -10,7 +10,7 @@ class civ(object):
 
     def __init__(self, config, callback):
         self.s = serial.Serial(config.icom_serial_port, int(config.icom_serial_baud))
-        self.s.write(b"\xFE\xFE\x88\x00\x03\xFD")
+        self.s.write(b"\xFE\xFE\x88\x00\x03\xFD") # 0x88 -> 0x00 - get frequency (0x03)
 
         self.callback = callback
 
@@ -40,11 +40,14 @@ class civ(object):
             print("invalid end")
             return
 
-        if cmd == 0x00 or cmd == 0x03: # frequency
-            self.last_freq = int("".join([bcd(b) for b in data[::-1]]))
-            self.callback({'freq': self.last_freq})
-        else:
-            print(f"CI-V: unknown command 0x{cmd:x}")
+        try:
+            if cmd == 0x00 or cmd == 0x03: # frequency
+                self.last_freq = int("".join([bcd(b) for b in data[::-1]]))
+                self.callback({'freq': self.last_freq})
+            else:
+                print(f"CI-V: unknown command 0x{cmd:x}")
+        except struct.error:
+            pass
 
 
     def backend_loop(self):
