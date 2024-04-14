@@ -29,7 +29,7 @@ class civ(object):
         src = packet[3]
 
         if dst != 0x00:
-            print("dst not 0x00")
+            print(f"dst is 0x{dst:.2x}, not 0x00")
             return
 
         cmd = packet[4]
