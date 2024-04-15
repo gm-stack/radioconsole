@@ -33,12 +33,16 @@ class GPIOShutdown(LogViewerStatusApp):
 
         self.services = ['gpio_shutdown']
 
+        self.colour = (0xFF,0xFF,0xFF)
+        self.status = ""
         self.shutdown_timer_running = False
         self.shutdown_timer = None
 
         def pin_low(msg, match):
             self.shutdown_timer = float(self.GPIOShutdownConfig.shutdown_time)
-            self.update_shutdown_timer("pwr on", (0xFF,0xFF,0xFF))
+            self.status = "pwr on"
+            self.colour = (0xFF,0xFF,0xFF)
+            self.update_shutdown_timer()
             self.shutdown_timer_running = False
             self.countdown.set_text_colour((0xCC,0xCC,0xCC))
             self.countdown_label.set_text_colour((0xCC,0xCC,0xCC))
@@ -47,7 +51,9 @@ class GPIOShutdown(LogViewerStatusApp):
 
         def pin_high(msg, match):
             self.shutdown_timer = float(self.GPIOShutdownConfig.shutdown_time)
-            self.update_shutdown_timer("pwr off", (0xFF,0xA5,0x00))
+            self.status = "pwr off"
+            self.colour = (0xFF,0xA5,0x00)
+            self.update_shutdown_timer()
             self.shutdown_timer_running = True
             self.countdown.set_text_colour((0xCC,0x84,0x00))
             self.countdown_label.set_text_colour((0xCC,0x84,0x00))
@@ -56,7 +62,9 @@ class GPIOShutdown(LogViewerStatusApp):
 
         def pin_still_high(msg, match):
             self.shutdown_timer = float(match.group(1))
-            self.update_shutdown_timer("pwr off", (0xFF,0xA5,0x00))
+            self.status = "pwr off"
+            self.colour = (0xFF,0xA5,0x00)
+            self.update_shutdown_timer()
             self.shutdown_timer_running = True
             self.countdown.set_text_colour((0xCC,0x84,0x00))
             self.countdown_label.set_text_colour((0xCC,0x84,0x00))
@@ -66,7 +74,9 @@ class GPIOShutdown(LogViewerStatusApp):
         def radioconsole_stopped(msg, match):
             self.shutdown_timer = None
             self.shutdown_timer_running = False
-            self.update_shutdown_timer("stopped", (0xCC,0xCC,0xCC))
+            self.status = "stopped"
+            self.colour = (0xCC,0xCC,0xCC)
+            self.update_shutdown_timer()
             self.countdown.set_text("--:--.---")
             self.countdown_label.set_text("gpio_shutdown not running")
             self.countdown.set_text_colour((0x66,0x66,0x66))
@@ -75,7 +85,9 @@ class GPIOShutdown(LogViewerStatusApp):
 
         def radioconsole_started(msg, match):
             self.shutdown_timer = float(self.GPIOShutdownConfig.shutdown_time)
-            self.update_shutdown_timer("pwr on", (0xFF,0xFF,0xFF))
+            self.status = "pwr on"
+            self.colour = (0xFF,0xFF,0xFF)
+            self.update_shutdown_timer()
             self.shutdown_timer_running = False
             self.countdown.set_text_colour((0xCC,0xCC,0xCC))
             self.countdown_label.set_text_colour((0xCC,0xCC,0xCC))
@@ -113,29 +125,40 @@ class GPIOShutdown(LogViewerStatusApp):
 
         self.status_icon = gpio_shutdown_status_icon()
         self.status_icons = [self.status_icon.surface]
-        self.status_icon.update(None, self.shutdown_timer, ((0xCC,0xCC,0xCC)), "?")
+        self.status_icon.update('warning_red', self.shutdown_timer, ((0xCC,0xCC,0xCC)), "?")
         self.status_icons_updated = True
         self.data_updated = True
 
-    def update_shutdown_timer(self, status, colour):
+    def update_shutdown_timer(self):
         if self.shutdown_timer:
             countdown_text = time_format.mm_ss_fff(self.shutdown_timer)
         else:
             countdown_text = "--:--.---"
         self.countdown.set_text(countdown_text)
-        self.countdown.set_text_colour(colour)
-        self.countdown_label.set_text_colour(colour)
-        self.status_icon.update(None, self.shutdown_timer, colour, status)
+        self.countdown.set_text_colour(self.colour)
+        self.countdown_label.set_text_colour(self.colour)
+
+        self.status_icon.update(self.status_icon_icon, self.shutdown_timer, self.colour, self.status)
+        self.status_icons_updated = True
 
     def update(self, dt):
+        if self.data_updated:
+            if self.ssh_connection_issue:
+                self.status_icon_icon = 'warning_red'
+            else:
+                self.status_icon_icon = None
+            self.status_icon.update(self.status_icon_icon, self.shutdown_timer, self.colour, self.status)
+            self.status_icons_updated = True
         if self.shutdown_timer_running:
             self.shutdown_timer -= dt
             if self.shutdown_timer <= 0.0:
                 self.shutdown_timer = 0.0
                 self.shutdown_timer_running = False
-            colour=(0xFF,0xC5,0x00)
             if self.shutdown_timer < 30.0:
-                colour = (0xFF,0x00,0x00)
-            self.update_shutdown_timer("pwr off", colour)
+                self.colour = (0xFF,0x00,0x00)
+            else:
+                self.colour=(0xFF,0xC5,0x00)
+            self.status = "pwr off"
+            self.update_shutdown_timer()
             self.data_updated = True
         return super().update(dt)

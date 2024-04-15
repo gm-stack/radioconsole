@@ -130,3 +130,35 @@ label:
       name: "B612Mono"
       size: 12
       bold: 0
+'#service_start_button':
+  prototype: 'button'
+  colours:
+    #ormal_bg: "#4c5052,#3c4042,90"
+    normal_bg: "#3c7042,#2c4032,90"
+'#service_stop_button':
+  prototype: 'button'
+  colours:
+    #ormal_bg: "#4c5052,#3c4042,90"
+    normal_bg: "#6c4042,#3c3032,90"
+'#service_status_button':
+  prototype: 'button'
+  colours:
+    #ormal_bg: "#4c5052,#3c4042,90"
+    normal_bg: "#3c4072,#2c3042,90"
+'#service_status_selected_button':
+  prototype: 'button'
+  colours:
+    #ormal_bg: "#4c5052,#3c4042,90"
+    normal_bg: "#3c7072,#2c4042,90"
+'#service_label':
+  prototype: '#param_label'
+  font:
+    name: "B612Mono"
+    size: 13
+    bold: 1
+'#service_status_value':
+  prototype: '#param_value'
+  font:
+    name: "B612Mono"
+    size: 13
+    bold: 1

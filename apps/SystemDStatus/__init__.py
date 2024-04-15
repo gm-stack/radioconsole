@@ -1,10 +1,11 @@
 import json
 import types
+import re
 
 import pygame
 import pygame_gui
 
-from util import stat_label, stat_view
+from util import stat_label, stat_view, rc_button
 from .status_icon import systemd_status_icon
 
 from ..LogViewer import LogViewer
@@ -35,6 +36,8 @@ class SystemDStatus(LogViewer):
         super().__init__(bounds, cfg, f"{name}_logviewer")
         self.config = config
 
+        self.brackets_regex = re.compile(r'([(\[{].*?[)\]}][\s*])')
+
         y_off = bounds.y
         x = 0
 
@@ -51,33 +54,36 @@ class SystemDStatus(LogViewer):
 
             self.ui_element_values[service] = {}
 
-            self.ui_element_start_stop_buttons[pygame_gui.elements.UIButton(
+            self.ui_element_start_stop_buttons[rc_button(
+                object_id="#service_start_button",
                 relative_rect=pygame.Rect(
                     x + 315, y,
-                    80, 32
+                    80, 48
                 ),
                 text="Start",
                 manager=self.gui
             )] = service
 
             self.ui_element_values[service]['description'] = stat_label(
-                relative_rect=pygame.Rect(x, y, 315, 32),
+                object_id="#service_label",
+                relative_rect=pygame.Rect(x+80, y, 235, 32),
                 text=service, manager=self.gui
             )
 
-            y += 32
-
-            self.ui_element_status_buttons[pygame_gui.elements.UIButton(
+            self.ui_element_status_buttons[rc_button(
+                object_id="#service_status_button",
                 relative_rect=pygame.Rect(
                     x, y,
-                    80, 32
+                    80, 48
                 ),
                 text="Status",
                 manager=self.gui
             )] = service
 
+            y += 24
+
             self.ui_element_values[service]['load'] = stat_view(
-                relative_rect=pygame.Rect(x + 80, y, 90, 32),
+                relative_rect=pygame.Rect(x + 80, y, 78, 24),
                 name='load',
                 manager=self.gui,
                 split='no_label',
@@ -87,11 +93,12 @@ class SystemDStatus(LogViewer):
                     'not-found': (255, 0, 0, 255),
                     None: (127, 127, 127, 255)
                 },
-                colourmap_mode='equals'
+                colourmap_mode='equals',
+                object_id_value="#service_status_value"
             )
 
             self.ui_element_values[service]['sub'] = stat_view(
-                relative_rect=pygame.Rect(x + 170, y, 120, 32),
+                relative_rect=pygame.Rect(x + 80 + 78, y, 78, 24),
                 name='sub',
                 manager=self.gui,
                 split='no_label',
@@ -102,11 +109,12 @@ class SystemDStatus(LogViewer):
                     'running': (0, 255, 0, 255),
                     None: (127, 127, 127, 255)
                 },
-                colourmap_mode='equals'
+                colourmap_mode='equals',
+                object_id_value="#service_status_value"
             )
 
             self.ui_element_values[service]['active'] = stat_view(
-                relative_rect=pygame.Rect(x + 290, y, 105, 32),
+                relative_rect=pygame.Rect(x + 80 + (78*2), y, 78, 24),
                 name='active',
                 manager=self.gui,
                 split='no_label',
@@ -116,11 +124,12 @@ class SystemDStatus(LogViewer):
                     'failed': (255, 0, 0, 255),
                     None: (127, 127, 127, 255)
                 },
-                colourmap_mode='equals'
+                colourmap_mode='equals',
+                object_id_value="#service_status_value"
             )
 
             if (x + 400) >= bounds.w:
-                y_off += 74
+                y_off += 58
                 x = 0
             else:
                 x += 400
@@ -153,6 +162,9 @@ class SystemDStatus(LogViewer):
     def setup_logviewer(self, service):
         self.set_tail_command(f"journalctl --no-hostname -f -u {service}.service")
 
+    def strip_brackets(self, name):
+        return re.sub(self.brackets_regex, "", name)
+
     def update(self, dt):
         if self.data_updated:
             count = 0
@@ -161,13 +173,18 @@ class SystemDStatus(LogViewer):
             errored = 0
             for unit_name in self.config.services:
                 service = self.service_status.get(unit_name, {})
-                self.ui_element_values[unit_name]['description'].set_text(service.get('description', unit_name))
+                description = self.strip_brackets(service.get('description', unit_name))
+                self.ui_element_values[unit_name]['description'].set_text(description)
                 self.ui_element_values[unit_name]['load'].set_text(service.get('load', ''))
                 self.ui_element_values[unit_name]['sub'].set_text(service.get('sub', ''))
                 self.ui_element_values[unit_name]['active'].set_text(service.get('active', ''))
 
                 button_text = "Start" if service.get('active') in ('inactive', 'disabled', 'failed') else 'Stop'
                 [ button.set_text(button_text)
+                    for button in self.ui_element_start_stop_buttons.keys()
+                    if self.ui_element_start_stop_buttons[button] == unit_name ]
+                button_id = f"#service_{button_text.lower()}_button"
+                [ button.set_id(button_id)
                     for button in self.ui_element_start_stop_buttons.keys()
                     if self.ui_element_start_stop_buttons[button] == unit_name ]
                 if service:
@@ -182,7 +199,7 @@ class SystemDStatus(LogViewer):
             icon = None
             if activating > 0:
                 icon = 'warning_orange'
-            if errored > 0 or self.no_data:
+            if errored > 0 or self.no_data or self.ssh_connection_issue:
                 icon = 'warning_red'
 
             self.status_icon.update(count, running, errored, icon=icon)
@@ -214,6 +231,12 @@ class SystemDStatus(LogViewer):
                 self.run_ssh_func_single(self.config, run_cmd, self.handle_error)
             elif e.ui_element in self.ui_element_status_buttons:
                 service = self.ui_element_status_buttons[e.ui_element]
+                for button in self.ui_element_status_buttons.keys():
+                    if button == e.ui_element:
+                        button.set_id("#service_status_selected_button")
+                    else:
+                        button.set_id("#service_status_button")
+
                 self.setup_logviewer(service)
 
 

@@ -1,7 +1,30 @@
 import pygame_gui
 import pygame
+import pygame_gui.elements.ui_button
 
 from . import timegraph
+
+class rc_button(pygame_gui.elements.ui_button.UIButton):
+    def __init__(self, *args, **kwargs):
+
+        # need to do this because it could be added via args or kwargs
+        def save_args(
+                a=None, b=None, c=None, d=None,
+                container=None, e=None, f=None,
+                parent_element=None, *args, **kwargs
+        ):
+            self.container = container
+            self.parent_element = parent_element
+
+        save_args(*args, **kwargs)
+        super().__init__(*args, **kwargs)
+
+    def set_id(self, object_id):
+        self._create_valid_ids(container=self.container,
+                               parent_element=self.parent_element,
+                               object_id=object_id,
+                               element_id='button')
+        self.rebuild_from_changed_theme_data()
 
 class stat_display(pygame_gui.elements.ui_label.UILabel):
     def __init__(self, *args, object_id='#param_value', **kwargs):
