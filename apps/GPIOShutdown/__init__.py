@@ -35,6 +35,7 @@ class GPIOShutdown(LogViewerStatusApp):
 
         self.colour = (0xFF,0xFF,0xFF)
         self.status = ""
+        self.status_icon_icon = None
         self.shutdown_timer_running = False
         self.shutdown_timer = None
 
