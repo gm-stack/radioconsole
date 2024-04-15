@@ -1,14 +1,21 @@
 import pygame
+import os
+
+base_path = os.path.dirname(__file__)
+
+def load_image_relative(path):
+    image_path = os.path.join(base_path, path)
+    return pygame.image.load(image_path)
 
 radioconsole_icons = {
-    'warning': pygame.image.load("apps/common/warning.png"),
-    'raspberrypi': pygame.image.load("apps/common/raspberry_pi.png"),
-    'satellite': pygame.image.load("apps/common/satellite.png"),
-    'signal': pygame.image.load("apps/common/signal.png"),
-    'services': pygame.image.load("apps/common/services.png"),
-    'gps_satellite': pygame.image.load("apps/common/gps_satellite.png"),
-    'power': pygame.image.load("apps/common/power.png"),
-    'direwuff': pygame.image.load("apps/common/direwuff.png")
+    'warning': load_image_relative("warning.png"),
+    'raspberrypi': load_image_relative("raspberry_pi.png"),
+    'satellite': load_image_relative("satellite.png"),
+    'signal': load_image_relative("signal.png"),
+    'services': load_image_relative("services.png"),
+    'gps_satellite': load_image_relative("gps_satellite.png"),
+    'power': load_image_relative("power.png"),
+    'direwuff': load_image_relative("direwuff.png")
 }
 
 def colour_image(image, colour, colourname):

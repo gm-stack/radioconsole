@@ -5,6 +5,7 @@ import pygame.gfxdraw
 import pygame.math
 from pygame import surface
 from ..common.IconManager import radioconsole_icons
+import fonts
 
 GNSS_IDS={
     0: {
@@ -61,8 +62,8 @@ class gps_satview(object):
     text_colour = (0xCC,0xCC,0xCC)
 
     def __init__(self, bounds):
-        self.font = pygame.font.Font("ttf/B612-Regular.ttf", 16)
-        self.bigfont = pygame.font.Font("ttf/B612-Regular.ttf", 24)
+        self.font = fonts.get_font("B612", "Regular", 16)
+        self.bigfont = fonts.get_font("B612", "Regular", 24)
         self.bounds = bounds
         self.surf = surface.Surface(self.bounds.size)
         self.sat_icons = {
@@ -72,14 +73,14 @@ class gps_satview(object):
         }
         self.sat_icons['white'] = radioconsole_icons['gps_satellite']
         self.sat_icon_halfsize = pygame.math.Vector2(
-            self.sat_icons['white'].get_width() / 2, 
+            self.sat_icons['white'].get_width() / 2,
             self.sat_icons['white'].get_height() / 2
         )
         self.compass_labels = {
             deg: self.bigfont.render(label, True, (0,255,0))
             for deg,label in compass.items()
         }
-        
+
     def gps_mode(self, m):
         return {
             0: 'UNK',
@@ -87,7 +88,7 @@ class gps_satview(object):
             2: '2D',
             3: '3D'
         }.get(m,'?')
-    
+
     def gps_colour(self, m):
         return {
             '3D': (0, 255, 0, 255),
@@ -97,7 +98,7 @@ class gps_satview(object):
     def vector_for_angle(self, angle):
         deg = (angle - self.track) % 360.0
         return pygame.math.Vector2(
-            math.sin(math.radians(deg)), 
+            math.sin(math.radians(deg)),
             -math.cos(math.radians(deg))
         )
 
@@ -109,7 +110,7 @@ class gps_satview(object):
 
         self.satview_radius = 150
         self.satview_centre = pygame.math.Vector2(200,210)
-        
+
         self.track = tpv.get('track', 0.0)
 
         for i in range(1, self.satview_radius, int(self.satview_radius / 10)):
@@ -117,9 +118,9 @@ class gps_satview(object):
         for i in range(0, 359, 10):
             direction = self.vector_for_angle(i)
             pygame.draw.aaline(
-                self.surf, 
-                (0, 255, 0), 
-                self.satview_centre, 
+                self.surf,
+                (0, 255, 0),
+                self.satview_centre,
                 self.satview_centre + (direction * self.satview_radius)
             )
         self.surf.unlock()
@@ -155,7 +156,7 @@ class gps_satview(object):
         numused = len([i for i in self.sky if i['used']])
         sats_text = self.bigfont.render(f"{numused}/{numsats}", True, self.gps_colour(gps_mode))
         self.surf.blit(sats_text, sats_text.get_rect(topright=(self.bounds.w, 4 + mode_text.get_height())))
-        
+
         maidenhead = self.bigfont.render(mh, True, self.text_colour)
         self.surf.blit(maidenhead, maidenhead.get_rect(bottomright=(self.bounds.w, self.bounds.h)))
 

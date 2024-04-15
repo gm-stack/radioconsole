@@ -1,12 +1,12 @@
-import pygame
-
 from ..common import status_icon
 from ..common import time_format
+
+import fonts
 
 class gpio_shutdown_status_icon(status_icon):
     def __init__(self):
         super().__init__(font_size=14)
-        self.font_bigger = pygame.font.Font("ttf/B612-Regular.ttf", 16)
+        self.font_bigger = fonts.get_font("B612", "Regular", 16)
         self.underlay_icon = 'power_dark'
         self.clear()
 

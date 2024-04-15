@@ -36,14 +36,12 @@ button:
   font:
     name: "B612"
     size: 16
-    regular_path: "ttf/B612-Regular.ttf"
 label:
   colours:
     dark_bg: "#21282d,#11181d,90"
   font:
     name: "B612"
     size: 14
-    regular_path: "ttf/B612-Regular.ttf"
 '#param_label':
   colours:
     normal_text: "#FF00FF"
@@ -52,8 +50,6 @@ label:
     name: "B612Mono"
     size: 14
     bold: 1
-    regular_path: "ttf/B612Mono-Regular.ttf"
-    bold_path: "ttf/B612Mono-Bold.ttf"
 '#param_label_top':
   prototype: '#param_label'
   colours:
@@ -78,7 +74,6 @@ label:
     name: "B612Mono"
     size: 14
     bold: 0
-    regular_path: "ttf/B612Mono-Regular.ttf"
 '#param_value_vert':
   prototype: '#param_value'
   colours:
@@ -120,7 +115,6 @@ label:
     name: "B612Mono"
     size: 90
     bold: 0
-    regular_path: "ttf/B612Mono-Regular.ttf"
 '#countdown_label':
   prototype: '#param_label'
   colours:
@@ -130,11 +124,9 @@ label:
     name: "B612"
     size: 30
     bold: 0
-    regular_path: "ttf/B612-Regular.ttf"
   '#igate_value':
     prototype: '#param_value'
     font:
       name: "B612Mono"
       size: 12
       bold: 0
-      regular_path: "ttf/B612Mono-Regular.ttf"

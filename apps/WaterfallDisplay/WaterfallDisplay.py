@@ -13,8 +13,10 @@ import crash_handler
 from AppManager.app import app
 from . import turbo_colormap
 from util import stat_display
+import fonts
 
 PROTOCOL_VERSION = 0x01
+HEADER_SIZE = 14
 
 class WaterfallDisplay(app):
     default_config = {
@@ -67,7 +69,7 @@ class WaterfallDisplay(app):
                 BUTTON_Y,
                 128, self.config.button_height
             ),
-            text="Relative Mode",
+            text="Relative",
             manager=self.gui
         )
         self.button_zoommode = pygame_gui.elements.UIButton(
@@ -76,12 +78,12 @@ class WaterfallDisplay(app):
                 BUTTON_Y,
                 128, self.config.button_height
             ),
-            text="FFT Zoom",
+            text="FFT Crop",
             manager=self.gui
         )
         if self.decimate_zoom:
             # preserve text when disabled as FFT Zoom
-            self.button_zoommode.set_text("Decimate Zoom")
+            self.button_zoommode.set_text("Decimate")
 
         self.label_status = stat_display(
             relative_rect=pygame.Rect(
@@ -152,19 +154,19 @@ class WaterfallDisplay(app):
             elif e.ui_element == self.button_absmode:
                 self.absmode = not self.absmode
                 if self.absmode:
-                    self.button_absmode.set_text("Absolute Mode")
+                    self.button_absmode.set_text("Absolute")
                     self.button_zoom_in.disable()
                     self.button_zoom_out.disable()
                     self.button_zoommode.disable()
                 else:
-                    self.button_absmode.set_text("Relative Mode")
+                    self.button_absmode.set_text("Relative")
                     self.button_zoom_in.enable()
                     self.button_zoom_out.enable()
                     self.button_zoommode.enable()
             elif e.ui_element == self.button_zoommode:
                 self.decimate_zoom = not self.decimate_zoom
                 self.button_zoommode.set_text(
-                    "Decimate Zoom" if self.decimate_zoom else "FFT Zoom"
+                    "Decimate" if self.decimate_zoom else "FFT Crop"
                 )
             self.send_params()
 
@@ -192,8 +194,9 @@ class WaterfallDisplay(app):
         return centre_pixel + int((freq - centre_freq) / hz_per_pixel)
 
     def draw_marker(self, freq, screen, highlight=False, relative=False):
+        # FIXME: rework this, rendered every frame
         x = self.freq_to_x(freq)
-        font = pygame.font.Font(None, 24)
+        font = fonts.get_font("B612Mono", "Regular", 20)
 
         text_colour = (255, 0, 0) if highlight else (0, 255, 255)
         line_colour = (255, 0, 0) if highlight else (0, 128, 0)
@@ -294,7 +297,7 @@ class WaterfallDisplay(app):
 
                     while self.connected:
                         # todo: parse header
-                        frame_size = self.bounds.w + 6
+                        frame_size = self.bounds.w + 14
                         data = bytes()
                         while len(data) < frame_size:
                             try:
@@ -325,21 +328,26 @@ class WaterfallDisplay(app):
                         if not self.connected:
                             break
 
-                        d = struct.unpack("!BBIII", data[:14])
-                        ver, msg, freq, band_low, band_high = d
-                        if ver != PROTOCOL_VERSION:
-                            raise ValueError(f"protocol version not matched: {ver} != {PROTOCOL_VERSION}")
-                        if msg == 0x01:
-                            self.current_freq = freq
-                            self.abs_freq_low = band_low
-                            self.abs_freq_high = band_high
-                            self.fft_queue.put_nowait(data[6:])
-
+                        self.parse_fft_line_packet(data)
                 except OSError as e:
                     self.connected = False
                     print(str(e))
                     self.set_net_status(str(e))
             time.sleep(1)
+
+    def parse_fft_line_packet(self, data):
+        d = struct.unpack("!BBIII", data[:HEADER_SIZE])
+        ver, msg, freq, band_low, band_high = d
+        if ver != PROTOCOL_VERSION:
+            raise ValueError(f"protocol version not matched: {ver} != {PROTOCOL_VERSION}")
+        if msg == 0x01:
+            self.current_freq = freq
+            self.abs_freq_low = band_low
+            self.abs_freq_high = band_high
+            self.fft_queue.put_nowait(data[HEADER_SIZE:])
+            return True
+        return False
+
 
     @crash_handler.monitor_thread
     def udp_backend_loop(self):
@@ -347,19 +355,16 @@ class WaterfallDisplay(app):
             u.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             u.bind(('0.0.0.0', 45362))
             while True:
+                # TODO: check addr?
                 #if addr == # ?
-                frame_size = self.bounds.w + 6
+                frame_size = self.bounds.w + HEADER_SIZE
                 data = bytes()
                 while len(data) < frame_size:
                     rcvd, addr = u.recvfrom(frame_size-len(data))
                     if not rcvd:
                         continue
                     data += rcvd
-                d = struct.unpack("!BBI", data[:6])
-                ver, msg, freq = d
-                if msg == 0x01:
-                    self.current_freq = freq
-                    self.fft_queue.put_nowait(data[6:])
+                if self.parse_fft_line_packet(data):
                     udp_status = "Connected (+udp)"
                     if self.net_status != udp_status:
                         self.set_net_status(udp_status)
@@ -377,6 +382,8 @@ class WaterfallDisplay(app):
         else:
              self.display_bandwidth = self.rel_bandwidth
 
+        self.gui.draw_ui(screen)
+
         ffts = []
         items = self.fft_queue.qsize()
         while items:
@@ -385,8 +392,8 @@ class WaterfallDisplay(app):
         if ffts:
             self.draw_wf(ffts, screen)
             self.draw_graph(ffts[-1], screen) # only need to draw graph once
-
-        self.gui.draw_ui(screen)
+        else:
+            return False
 
         if not self.connected:
             return True
@@ -394,12 +401,20 @@ class WaterfallDisplay(app):
         if self.absmode:
             if self.current_freq is not None:
                 self.draw_marker(self.current_freq, screen, highlight=True)
-                self.draw_marker(7000000, screen)
-                self.draw_marker(7100000, screen)
-                self.draw_marker(7200000, screen)
-                self.draw_marker(7300000, screen)
-        else:
-            self.draw_marker(self.current_freq, screen, highlight=True, relative=True)
+
+            if self.abs_freq_low is not None and self.abs_freq_high is not None:
+                bw = (self.abs_freq_high - self.abs_freq_low)
+                if bw < 200_000: # 100khz
+                    every = 25_000
+                else:
+                    every = 100_000
+                markers = list(range(self.abs_freq_low, self.abs_freq_high, every))
+                for i in markers:
+                    self.draw_marker(i, screen)
+                if self.abs_freq_high not in markers:
+                    self.draw_marker(self.abs_freq_high, screen)
+        elif not self.absmode and ffts:
+            self.draw_marker(self.current_freq, screen, highlight=True)
             #for m in self.REL_BANDWIDTHS[self.rel_bandwidth]:
             #    self.draw_marker(config.CURRENT_FREQ + m, screen, relative=True)
             #    self.draw_marker(config.CURRENT_FREQ - m, screen, relative=True)

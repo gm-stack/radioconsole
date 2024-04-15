@@ -43,8 +43,7 @@ class DirewolfStatus(LogViewerStatusApp):
         self.has_ig_tx_packet = False
         self.has_rf_tx_packet = False
 
-        self.rf_tx_packet = ""
-
+        self.rf_tx_packet_payload = ""
         self.rf_tx_packet_igate_at = None
         self.rf_tx_packet_igate_time = None
         self.last_rf_tx_packet_igate_time = None

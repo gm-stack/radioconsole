@@ -1,6 +1,8 @@
 import pygame
 from .IconManager import radioconsole_icons
 
+import fonts
+
 IMAGE_CACHE = None
 
 class status_icon(object):
@@ -9,14 +11,14 @@ class status_icon(object):
         self.underlay_icon = None
         self.surface = pygame.surface.Surface((60,60), pygame.SRCALPHA)
         self.bgcolour = (0,0,0,255)
-        self.font = pygame.font.Font("ttf/B612-Regular.ttf", font_size)
+        self.font = fonts.get_font("B612", "Regular", font_size)
         self.clear()
-    
+
     def clear(self):
         self.surface.fill(self.bgcolour)
         if self.underlay_icon and self.underlay_icon in radioconsole_icons:
             self.surface.blit(radioconsole_icons[self.underlay_icon], (0,0))
-    
+
     def update(self):
         if self.overlay_icon and self.overlay_icon in radioconsole_icons:
             self.surface.blit(radioconsole_icons[self.overlay_icon], (0,0))

@@ -1,4 +1,9 @@
+import os
+
 import pygame
+import fonts
+
+base_path = os.path.dirname(__file__)
 
 class splash_screen():
     LOGO_OFFSET = (-5,-25)
@@ -8,10 +13,10 @@ class splash_screen():
     def __init__(self, screen):
         self.screen = screen
         self.screen_size = screen.get_size()
-        self.FONT = pygame.font.Font("ttf/B612-Regular.ttf", 14)
+        self.FONT = fonts.get_font("B612", "Regular", 14)
 
     def draw_splash(self):
-        logo = pygame.image.load("logo.png")
+        logo = pygame.image.load(os.path.join(base_path, "logo.png"))
         logo_size = logo.get_size()
         self.screen.blit(
             logo,
@@ -23,14 +28,14 @@ class splash_screen():
     def update_status(self, msg):
         text = self.FONT.render(msg, True, (255, 255, 255))
         text_size = text.get_size()
-        pygame.draw.rect(self.screen, (0, 0, 0), 
+        pygame.draw.rect(self.screen, (0, 0, 0),
         (
             0, self.screen_size[1] - text_size[1],
             self.screen_size[0], text_size[1]
         ))
 
         self.screen.blit(
-            text, 
+            text,
             ((self.screen_size[0] - text_size[0]) / 2,
             self.screen_size[1] - text_size[1])
         )

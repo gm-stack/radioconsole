@@ -1,5 +1,6 @@
-import pygame
 from pygame import surface
+
+import fonts
 
 FONT_CACHE=None
 
@@ -46,7 +47,7 @@ class TerminalView():
 
 
     def render_char(self, char, colour):
-        font = pygame.font.Font("ttf/B612Mono-Regular.ttf", 14)
+        font = fonts.get_font("B612Mono", "Regular", 14)
         text = font.render(char, True, colour)
         return text
 

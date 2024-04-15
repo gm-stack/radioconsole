@@ -6,6 +6,8 @@ import inspect
 
 import pygame
 
+import fonts
+
 screen = None
 safe_exit = None
 
@@ -66,7 +68,7 @@ def crash(exc, is_thread=False, threadmsg=None):
 
     screen.fill((0, 0, 0))
 
-    font = pygame.font.Font("ttf/FiraCode-Regular.ttf", 14)
+    font = fonts.get_font("FiraCode", "Regular", 14)
     header = "*"*80
 
     if threadmsg:
@@ -76,7 +78,7 @@ def crash(exc, is_thread=False, threadmsg=None):
         msg = f"Thread {thread_name} crashed: \n"
         msg += f"{header}\n{tb}\n"
     msg += f"{header}\n>>> Click/tap or press any key to exit... <<<"
-    
+
     lineheight = font.get_linesize()
     for i, line in enumerate(msg.splitlines()):
         text = font.render(line, True, (255, 0, 0))

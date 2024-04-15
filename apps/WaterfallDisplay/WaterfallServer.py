@@ -124,7 +124,7 @@ def handle_conn(conn, addr):
         nonlocal fft_via_udp
         freq = fft.rs.settings['freq']
         band_low, band_high = fft.rs.settings['band']
-        header = struct.pack('!BBIII', PROTOCOL_VERSION, 0x01, freq, band_low, band_high)
+        header = struct.pack('!BBI', PROTOCOL_VERSION, 0x01, freq)#, band_low, band_high)
         fftd = fft.fft(freq, band_low, band_high).astype('uint8').tobytes()
         if fft_via_udp:
             s = u.sendto(header+fftd, (addr[0], 45362))

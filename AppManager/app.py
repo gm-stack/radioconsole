@@ -16,8 +16,9 @@ class app(object):
         self.bounds = bounds
         self.name = name
 
-        self.gui = pygame_gui.UIManager(cfg.display.size, cfg.theme_file)
+        self.gui = pygame_gui.UIManager(cfg.display.size)
         fonts.load_fonts(self.gui)
+        self.gui.get_theme().load_theme(cfg.theme_file)
 
         self.had_event = True
         self.data_updated = True

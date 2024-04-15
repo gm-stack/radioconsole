@@ -1,8 +1,11 @@
+import os
 import pygame
 import pygame_gui
 import fonts
 from config_reader import cfg
 from .top_bar import top_bar
+
+base_path = os.path.dirname(__file__)
 
 class appSwitcher(object):
     FRONTMOST_APP = 'switcher'
@@ -17,11 +20,13 @@ class appSwitcher(object):
     status_icons_collection = []
 
     def __init__(self, screen):
-        self.gui = pygame_gui.UIManager(cfg.display.size, cfg.theme_file)
+        self.gui = pygame_gui.UIManager(cfg.display.size)
         fonts.load_fonts(self.gui)
+        print("fonts loaded, loading theme")
+        self.gui.get_theme().load_theme(cfg.theme_file)
         self.top_bar = top_bar(self)
         self.screen = screen
-        self.logo = pygame.image.load("logo.png")
+        self.logo = pygame.image.load(os.path.join(base_path, "../logo.png"))
         self.logo_size = self.logo.get_size()
         self.switchFrontmostApp('switcher', False)
 
