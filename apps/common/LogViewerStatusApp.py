@@ -30,6 +30,7 @@ class LogViewerStatusApp(SystemDLogViewer):
         config.command_button_h = 48
         config.command_button_margin = 2
         config.lookback = 100
+        config.tail_from_start = True
 
         super().__init__(bounds, config, "LogViewerStatus")
 

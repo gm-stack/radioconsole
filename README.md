@@ -202,7 +202,10 @@ This log viewer constructs the `journalctl` command to view the log in JSON form
 
 Showing the server name is on by default if there is more than one service, otherwise off. This can be overridden.
 
-For all services running, the start time of that service will be determined. All logs will be tailed from the earliest started currently running service. If no services are running, it will load the most recent 100 lines by default, but this is configurable.
+If `tail_from_start` is False (default), it will tail back `lookback` lines.
+If it is True, it will tail since the earliest started running service started. If none of the specified services are running, it will load the most recent `lookback` lines.
+
+Note that although you can't (yet) scroll up, you may want more `lookback` lines because this is the number of lines fetched from SystemD prior to any filtering being applied via `filter_lines`. If all 100 of the retrieved lines are blank, you will see nothing.
 
 The command buttons and configuration function identically to the [log_viewer](#log-viewer).
 
@@ -229,6 +232,7 @@ modules:
                                #            Use instead of piping to grep -v
       retry_seconds: 5         # [Optional] if command exits, re-run in, default 5
       lookback: 500            # [Optional] number of lines to look back if no services runnning, default 100
+      tail_from_start: False   # [Optional] tail from start, or most recent n lines (default False)
       max_scrollback: 50000    # [Optional] number of bytes of scrollback, default 50000
       command_buttons_x: 5     # [Optional] number of bottom command buttons per row
                                #            defaults to number of commands

@@ -10,6 +10,7 @@ class SSHBackgroundThreadApp(app):
 
     def __init__(self, bounds, config, name):
         self.backend_threads = {}
+        self.ssh_connection_issue = True
         super().__init__(bounds, config, name)
 
     def run_ssh_func_persistent(self, host, thread_name, func, error_func, *args, **kwargs):
@@ -80,6 +81,8 @@ class SSHBackgroundThreadApp(app):
                     banner_timeout=10
                 )
                 ts = ssh.get_transport()
+                if not onceonly:
+                    self.ssh_connection_issue = False
 
                 while True:
                     func(ts, *args, **kwargs)
@@ -89,19 +92,23 @@ class SSHBackgroundThreadApp(app):
 
             except OSError as e:
                 error_func(host, f"Connection error: {str(e)}")
+                self.ssh_connection_issue = True
                 self.data_updated = True
 
             except EOFError as e:
                 error_func(host, f"EOF error: {str(e)}")
+                self.ssh_connection_issue = True
                 self.data_updated = True
 
             except paramiko.SSHException as e:
                 error_func(host, f"SSH error: {str(e)}")
+                self.ssh_connection_issue = True
                 self.data_updated = True
 
             if onceonly:
                 break
             else:
+                self.ssh_connection_issue = True
                 time.sleep(1)
 
 
