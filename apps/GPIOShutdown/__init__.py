@@ -127,7 +127,7 @@ class GPIOShutdown(LogViewerStatusApp):
 
         self.status_icon = gpio_shutdown_status_icon()
         self.status_icons = [self.status_icon.surface]
-        self.status_icon.update('warning_red', self.shutdown_timer, ((0xCC,0xCC,0xCC)), "?")
+        self.status_icon.update('warning_red', self.ssh_connection_issue, self.shutdown_timer, ((0xCC,0xCC,0xCC)), "?")
         self.status_icons_updated = True
         self.data_updated = True
 
@@ -140,16 +140,12 @@ class GPIOShutdown(LogViewerStatusApp):
         self.countdown.set_text_colour(self.colour)
         self.countdown_label.set_text_colour(self.colour)
 
-        self.status_icon.update(self.status_icon_icon, self.shutdown_timer, self.colour, self.status)
+        self.status_icon.update(self.status_icon_icon, self.ssh_connection_issue, self.shutdown_timer, self.colour, self.status)
         self.status_icons_updated = True
 
     def update(self, dt):
         if self.data_updated:
-            if self.ssh_connection_issue:
-                self.status_icon_icon = 'warning_red'
-            else:
-                self.status_icon_icon = None
-            self.status_icon.update(self.status_icon_icon, self.shutdown_timer, self.colour, self.status)
+            self.status_icon.update(self.status_icon_icon, self.ssh_connection_issue, self.shutdown_timer, self.colour, self.status)
             self.status_icons_updated = True
         if self.shutdown_timer_running:
             self.shutdown_timer -= dt

@@ -10,7 +10,7 @@ class gpio_shutdown_status_icon(status_icon):
         self.underlay_icon = 'power_dark'
         self.clear()
 
-    def update(self, icon, timer, colour, status):
+    def update(self, icon, ssh_connection_issue, timer, colour, status):
         self.clear()
 
         countdown_text = time_format.mm_ss(timer)
@@ -21,5 +21,9 @@ class gpio_shutdown_status_icon(status_icon):
         timer_text = self.font_bigger.render(countdown_text, True, colour)
         self.surface.blit(timer_text, timer_text.get_rect(midbottom=(30,56)))
 
-        self.overlay_icon = icon
+        if ssh_connection_issue:
+            self.overlay_icon = 'warning_red'
+        else:
+            self.overlay_icon = icon
+
         super().update()

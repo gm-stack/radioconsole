@@ -34,7 +34,7 @@ class SystemDLogViewer(LogViewer):
         super().__init__(bounds, config, name)
 
     def run_tail_command(self, ts, _):
-        self.status_message(f"tail systemd logs for {self.config.services}")
+        self.status_message(f"tail systemd logs for {self.config.services}\n")
 
         start_timestamp = None
         service_flags = " ".join([f"-u {s}.service" for s in self.config.services])

@@ -144,7 +144,7 @@ class SystemDStatus(LogViewer):
             self.handle_error,
             self.config.services
         )
-        self.max_no_data_seconds = int(config.retry_seconds) * 4.0
+        self.max_no_data_seconds = int(config.retry_seconds) * 2.0
         self.data_good("services", no_data_allowed_time=self.max_no_data_seconds)
         self.no_data = False
 
@@ -233,7 +233,7 @@ class SystemDStatus(LogViewer):
                 service = self.ui_element_status_buttons[e.ui_element]
                 for button in self.ui_element_status_buttons.keys():
                     if button == e.ui_element:
-                        button.set_id("#service_status_selected_button")
+                        button.set_id("#command_button_selected")
                     else:
                         button.set_id("#command_button")
 

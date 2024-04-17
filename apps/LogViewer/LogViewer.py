@@ -211,6 +211,13 @@ class LogViewer(SSHBackgroundThreadApp):
         while True:
             select_array = [main_channel, more_cmd] + extra_channel_fds
             r,_,e = select.select(select_array,[],select_array, 15.0)
+
+            if not ts.is_active():
+                self.error_message("SSH connection closed\n")
+                self.ssh_connection_issue = True
+                self.data_updated = True
+                return
+
             if main_channel in r:
                 if main_channel.recv_ready():
                     if not recv_for_and_parse_newlines(main_channel, 'stdout', readStdErr=False):
