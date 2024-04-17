@@ -208,6 +208,7 @@ class DirewolfStatus(LogViewerStatusApp):
         self.status_icons = [self.status_icon.surface]
         self.status_icon.update(
             self.status_icon_icon,
+            self.ssh_connection_issue,
             self.rx_packet_time,
             self.ig_tx_packet_time,
             self.rf_tx_packet_time,
@@ -278,6 +279,7 @@ class DirewolfStatus(LogViewerStatusApp):
         if self.has_rx_packet or self.has_ig_tx_packet or self.has_rf_tx_packet:
             self.status_icon.update(
                 self.status_icon_icon,
+                self.ssh_connection_issue,
                 self.rx_packet_time,
                 self.ig_tx_packet_time,
                 self.rf_tx_packet_time,
@@ -291,6 +293,7 @@ class DirewolfStatus(LogViewerStatusApp):
             self.status_icon_icon = 'warning_red'
             self.status_icon.update(
                 self.status_icon_icon,
+                self.ssh_connection_issue,
                 self.rx_packet_time,
                 self.ig_tx_packet_time,
                 self.rf_tx_packet_time,

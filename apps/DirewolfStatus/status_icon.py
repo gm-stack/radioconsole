@@ -10,7 +10,7 @@ class direwolf_status_icon(status_icon):
         self.underlay_icon = 'direwuff_dark'
         self.clear()
 
-    def update(self, icon, rx, tx_ig, tx_rf, tx_rf_igated):
+    def update(self, icon, ssh_is_errored, rx, tx_ig, tx_rf, tx_rf_igated):
         self.clear()
 
         rx = self.font.render(time_format.mm_ss_since(rx), True, (0xFF,0xFF,0xFF))
@@ -30,6 +30,10 @@ class direwolf_status_icon(status_icon):
 
         tx_rf = self.font.render(time_format.mm_ss_since(tx_rf), True, colour)
         self.surface.blit(tx_rf, tx_rf.get_rect(midtop=(30,40)))
+
+        # override icon if SSH is broken
+        if ssh_is_errored:
+            icon = 'warning_red'
 
         self.overlay_icon = icon
         super().update()
