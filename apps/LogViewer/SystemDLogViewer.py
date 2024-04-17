@@ -70,10 +70,29 @@ class SystemDLogViewer(LogViewer):
         super().run_tail_command(ts, command)
 
     def filter(self, json_text):
-        out_msg = SystemDLogMessage(json_text, self.show_service_name)
-        # don't return actual out_msg, we want the JSON version if unfiltered
-        if super().filter(str(out_msg)):
-            return out_msg
+        # turn multiple json objects into an array
+        json_text = json_text.replace("}{", "}\n{")
+        for json_obj in json_text.split("\n"):
+            if not json_obj:
+                continue
+            try:
+                j = json.loads(json_obj)
+            except json.JSONDecodeError as e:
+                print(f"json decode failed: {e}, {json_obj}")
+                msg = SimpleNamespace(message=f"{str(e)}\n{json_obj}")
+                msg.timestamp = datetime.datetime.utcnow()
+                msg.timestamp_str = ""
+                msg.syslog_id = ""
+                return SimpleNamespace(msg=msg)
+
+            out = []
+
+            out_msg = SystemDLogMessage(j.items(), json_obj, self.show_service_name)
+            # don't return actual out_msg, we want the JSON version if unfiltered
+            if super().filter(str(out_msg)):
+                out.append(out_msg)
+
+        return out
 
     def update(self, dt):
         return super().update(dt)
@@ -86,18 +105,9 @@ class SystemDLogViewer(LogViewer):
 
 
 class SystemDLogMessage(object):
-    def __init__(self, msg, show_service_name):
+    def __init__(self, j, json_obj, show_service_name):
         self.show_service_name = show_service_name
-        self.msg_json = msg
-
-        try:
-            j = json.loads(self.msg_json).items()
-        except json.JSONDecodeError as e:
-            self.msg = SimpleNamespace(message=f"{str(e)}\n{self.msg_json}")
-            self.timestamp = datetime.datetime.utcnow()
-            self.timestamp_str = ""
-            self.syslog_id = ""
-            return
+        self.json_obj = json_obj
 
         def remove_prefix(text, prefix):
             if text.startswith(prefix):

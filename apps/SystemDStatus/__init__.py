@@ -71,7 +71,7 @@ class SystemDStatus(LogViewer):
             )
 
             self.ui_element_status_buttons[rc_button(
-                object_id="#service_status_button",
+                object_id="#command_button",
                 relative_rect=pygame.Rect(
                     x, y,
                     80, 48
@@ -235,7 +235,7 @@ class SystemDStatus(LogViewer):
                     if button == e.ui_element:
                         button.set_id("#service_status_selected_button")
                     else:
-                        button.set_id("#service_status_button")
+                        button.set_id("#command_button")
 
                 self.setup_logviewer(service)
 

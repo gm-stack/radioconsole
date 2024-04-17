@@ -41,31 +41,35 @@ class LogViewerStatusApp(SystemDLogViewer):
 
     def filter(self, text):
         # see if it's str, if not, make it one
-        filtered_msg = super().filter(text)
-        if type(filtered_msg) is str:
-            msg_text = filtered_msg
-        else:
-            msg_text = str(filtered_msg.msg.message)
+        filtered_msgs = super().filter(text)
 
-        hide_message = False
-        for m in self.process_messages:
-            matches = m['regex'].search(msg_text)
-            if matches:
-                if 'ui' in m:
-                    for i, ui_element in enumerate(m['ui']):
-                        self.ui[ui_element].set_text(matches.group(i+1))
-                if 'func' in m:
-                    m['func'](filtered_msg, matches)
-                if not m.get('passthrough', False):
-                    hide_message = True
+        out = []
 
-        # if our filter matched a log message
-        # unless that regex has passthrough=True
-        # don't write to screen
-        if hide_message:
-            return
+        for filtered_msg in filtered_msgs:
+            if type(filtered_msg) is str:
+                msg_text = filtered_msg
+            else:
+                msg_text = str(filtered_msg.msg.message)
 
-        #print(msg_text)
+            hide_message = False
+            for m in self.process_messages:
+                matches = m['regex'].search(msg_text)
+                if matches:
+                    if 'ui' in m:
+                        for i, ui_element in enumerate(m['ui']):
+                            self.ui[ui_element].set_text(matches.group(i+1))
+                    if 'func' in m:
+                        m['func'](filtered_msg, matches)
+                    if not m.get('passthrough', False):
+                        hide_message = True
 
-        self.data_updated = True
-        return filtered_msg
+            # if our filter matched a log message
+            # unless that regex has passthrough=True
+            # don't write to screen
+            if hide_message:
+                continue
+
+            self.data_updated = True
+            out.append(str(filtered_msg))
+
+        return "\n".join(out)

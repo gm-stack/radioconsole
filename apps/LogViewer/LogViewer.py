@@ -1,11 +1,15 @@
 import math
 import re
 import select
+import multiprocessing
+import queue
+import time
 
 import pygame
 import pygame_gui
 
 from ..common import TerminalView, SSHBackgroundThreadApp
+from util import rc_button
 
 class LogViewer(SSHBackgroundThreadApp):
 
@@ -28,6 +32,8 @@ class LogViewer(SSHBackgroundThreadApp):
         # store this elsewhere as we may be subclassed and configured differently
         self.logviewer_config = config
 
+        self.additional_command_queue = multiprocessing.Queue()
+
         self.command_buttons = {}
 
         if config.command_buttons_x == 0:
@@ -40,7 +46,7 @@ class LogViewer(SSHBackgroundThreadApp):
             button_col = button_num % config.command_buttons_x
             button_row = button_num // config.command_buttons_x
 
-            self.command_buttons[command_name] = pygame_gui.elements.UIButton(
+            self.command_buttons[command_name] = rc_button(
                 relative_rect=pygame.Rect(
                     bounds.x + config.command_button_margin + ((button_w + config.command_button_margin) * button_col),
                     (bounds.y + bounds.h) - config.command_button_margin -
@@ -49,7 +55,8 @@ class LogViewer(SSHBackgroundThreadApp):
                     config.command_button_h
                 ),
                 text=command_name,
-                manager=self.gui
+                manager=self.gui,
+                object_id="#command_button_grey"
             )
 
         if config.commands:
@@ -103,15 +110,25 @@ class LogViewer(SSHBackgroundThreadApp):
         self.data_updated = True
 
     def console_message(self, text, is_stderr=False):
-        text = self.filter(text)
-        if is_stderr:
-            colour = 'red'
-        else:
-            colour = 'white'
 
-        if text:
-            self.terminal_view.write(str(text), colour=colour)
-            self.data_updated = True
+        def do_console_write(filtered, is_stderr):
+            if is_stderr:
+                colour = 'red'
+            else:
+                colour = 'white'
+
+            if filtered:
+                self.terminal_view.write(str(filtered), colour=colour)
+                self.data_updated = True
+
+        filtered = self.filter(text)
+        if type(filtered) is list:
+            for msg in filtered:
+                do_console_write(msg, is_stderr)
+            return
+        do_console_write(filtered, is_stderr)
+
+
 
     def console_message_onceonly(self, text):
         self.terminal_view.write(text, colour='brightwhite')
@@ -134,78 +151,119 @@ class LogViewer(SSHBackgroundThreadApp):
     def run_tail_command(self, ts, command):
         self.status_message(f"\n---\n>>> {command}\n")
 
-        ch = ts.open_session()
-        ch.exec_command(command)
-        stdout = ch.makefile()
-        stderr = ch.makefile_stderr()
+        main_channel = ts.open_session()
+        main_channel.exec_command(command)
+
+        more_cmd = self.additional_command_queue._reader
+        extra_channel_fds = []
+        extra_channel_ui_name = {}
 
         buffers = {}
         buffers['stdout'] = bytes()
         buffers['stderr'] = bytes()
 
-        def recv_for_and_parse_newlines(ch, buffer):
-            if buffer == 'stdout':
-                out = ch.recv(8192)
-            else:
-                out = ch.recv_stderr(8192)
+        def recv_for_and_parse_newlines(channel, buffer, readStdErr=False, isConsole=True):
 
+            if readStdErr:
+                out = channel.recv_stderr(8192)
+            else:
+                out = channel.recv(8192)
+
+            input_closed = False
             if not out:
-                print("not out")
-                return False
+                input_closed = True
 
             buffers[buffer] += out
-            ends_newline = (buffers[buffer][-1] == '\n')
-            lines = buffers[buffer].splitlines()
 
-            if ends_newline: # if it ended exacly in a newline, start again
-                buffers[buffer] = bytes()
-                all_lines = lines
-            else: # otherwise keep the remaining bit of the last line
-                buffers[buffer] = lines[-1]
-                all_lines = lines[:-1]
+            all_lines = []
+            while True:
+                newline_pos = buffers[buffer].find(b'\n')
+                if newline_pos == -1:
+                    break
+                all_lines.append(buffers[buffer][:newline_pos + 1])
+                buffers[buffer] = buffers[buffer][newline_pos + 1:]
+
+            if input_closed:
+                # if that's all, include what remains
+                all_lines += [buffers[buffer]]
 
             # now decode all the lines
             for line in all_lines:
-                read_line = line.decode('UTF-8') + "\n"
-                self.console_message(read_line, is_stderr=(buffer == 'stderr'))
+                read_line = line.decode('UTF-8')
+                if isConsole:
+                    self.console_message(read_line, is_stderr=(buffer == 'stderr'))
+                else:
+                    self.console_message_onceonly(read_line)
+
+            if input_closed:
+                if channel.exit_status_ready():
+                    exit_status = channel.recv_exit_status()
+                    msg = f"\nCommand exited with status {exit_status}\n"
+                    if exit_status == 0:
+                        self.console_message_onceonly(msg)
+                    else:
+                        self.error_message(msg)
+                else:
+                    return True # try again to get input status
+                return False
             return True
 
-        buffer = bytes()
         while True:
-            r,w,e = select.select([ch],[],[ch], 1.0)
-            if ch in r:
-                if ch.recv_ready():
-                    if not recv_for_and_parse_newlines(ch, 'stdout'):
+            select_array = [main_channel, more_cmd] + extra_channel_fds
+            r,_,e = select.select(select_array,[],select_array, 15.0)
+            if main_channel in r:
+                if main_channel.recv_ready():
+                    if not recv_for_and_parse_newlines(main_channel, 'stdout', readStdErr=False):
                         break
-                if ch.recv_stderr_ready():
-                    if not recv_for_and_parse_newlines(ch, 'stderr'):
+                if main_channel.recv_stderr_ready():
+                    if not recv_for_and_parse_newlines(main_channel, 'stderr', readStdErr=True):
                         break
 
-                if ch in e:
-                    self.error_message("fd entered error list")
-                    ch.close()
-                    return
-                else:
-                    ts.send_ignore()
+            for cmd_fd in extra_channel_fds:
+                if cmd_fd.recv_ready() or cmd_fd.exit_status_ready():
+                    if not recv_for_and_parse_newlines(cmd_fd, f"cmd_{cmd_fd.fileno()}", isConsole=False):
+                        cmd_fd.close()
+                        del buffers[command_name]
+                        extra_channel_fds.remove(cmd_fd)
+                        [ button.set_id("#command_button_grey")
+                            for button in self.command_buttons.values()
+                            if button.text == extra_channel_ui_name[cmd_fd] ]
+                        del extra_channel_ui_name[cmd_fd]
 
-        exit_status = ch.recv_exit_status()
-        msg = f"\nCommand exited with status {exit_status}\n"
-        msg += f"Retrying in {self.logviewer_config.retry_seconds}s\n"
-        if exit_status == 0:
-            self.status_message(msg)
-        else:
-            self.error_message(msg)
+            if e:
+                print(f"fd {e} entered error list")
+                self.error_message(f"fd {e} entered error list")
+                main_channel.close()
+                return
+
+            if more_cmd in r:
+                while True:
+                    try:
+                        extra_command, ui_element_name = self.additional_command_queue.get_nowait()
+                        ch2 = ts.open_session()
+                        ch2.set_combine_stderr(True)
+                        ch2.exec_command(extra_command)
+                        extra_channel_fds += [ch2]
+                        extra_channel_ui_name[ch2] = ui_element_name
+                        command_name = f"cmd_{ch2.fileno()}"
+                        buffers[command_name] = bytes()
+                    except queue.Empty:
+                        print("queue read, continuing")
+                        break
+
+            if not r and not e:
+                # nothing to select()
+                # send some data to check connection's alive
+                ts.send_ignore()
+
+        self.status_msg(f"Retrying in {self.logviewer_config.retry_seconds}s\n")
 
         self.data_updated = True
 
-    def run_button_command(self, command):
+    def run_button_command(self, command, ui_element):
+        ui_element.set_id("#command_button_selected")
         self.status_message(f"\n---\n>>> {command}\n")
-
-        def run_cmd(ts, command):
-            res = self.run_command(ts, command)
-            self.console_message_onceonly(res)
-
-        self.run_ssh_func_single(self.config, run_cmd, self.handle_error, command=command)
+        self.additional_command_queue.put((command, ui_element.text))
 
     def update(self, dt):
         if super().update(dt):
@@ -222,4 +280,4 @@ class LogViewer(SSHBackgroundThreadApp):
         if e.type == pygame.USEREVENT and e.user_type == pygame_gui.UI_BUTTON_PRESSED:
             if e.ui_element in self.command_buttons.values():
                 command = self.logviewer_config.commands[e.ui_element.text]
-                self.run_button_command(command)
+                self.run_button_command(command, e.ui_element)

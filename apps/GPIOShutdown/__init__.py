@@ -13,12 +13,13 @@ class GPIOShutdown(LogViewerStatusApp):
         "retry_seconds": 5,
         "max_scrollback": 50000,
         "command_button_h": 48,
-        "command_buttons_x": 2,
+        "command_buttons_x": 3,
         "command_button_margin": 2,
         "filter_lines": [],
         "commands": {
             'Enable GPIO Shutdown': 'sudo service gpio_shutdown start',
-            'Disable GPIO Shutdown': 'sudo service gpio_shutdown stop'
+            'Disable GPIO Shutdown': 'sudo service gpio_shutdown stop',
+            'GPIO shutdown status': 'sudo service gpio_shutdown status'
         },
         "show_service_name": None,
         "shutdown_time": 300
@@ -100,8 +101,8 @@ class GPIOShutdown(LogViewerStatusApp):
             {"r": r'pin \d* state is now high', 'func': pin_high},
             {"r": r'pin \d* still high, shutdown in (\d*)s', 'func': pin_still_high},
             {"r": r'Stopped Radioconsole gpio_shutdown', 'func': radioconsole_stopped},
-            {"r": r'Started Radioconsole gpio_shutdown.', 'func': radioconsole_started},
-
+            {"r": r'Stopping Radioconsole gpio_shutdown...', 'func': radioconsole_stopped}, # not sure why we don't get stopped msg
+            {"r": r'Started Radioconsole gpio_shutdown.', 'func': radioconsole_started}
         ]
 
         super().__init__(terminal_bounds, config, "GPIOLogViewer")

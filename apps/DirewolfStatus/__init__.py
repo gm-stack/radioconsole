@@ -303,6 +303,15 @@ class DirewolfStatus(LogViewerStatusApp):
             self.restart_backend_thread()
 
     def update(self, dt):
+        self.status_icon.update(
+            self.status_icon_icon,
+            self.ssh_connection_issue,
+            self.rx_packet_time,
+            self.ig_tx_packet_time,
+            self.rf_tx_packet_time,
+            self.last_rf_packet_igated,
+        )
+        self.status_icons_updated = True
         return super().update(dt)
 
     def restart_backend_thread(self):
