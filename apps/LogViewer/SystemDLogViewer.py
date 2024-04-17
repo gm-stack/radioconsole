@@ -33,7 +33,7 @@ class SystemDLogViewer(LogViewer):
 
         super().__init__(bounds, config, name)
 
-    def run_tail_command(self, ts, command):
+    def run_tail_command(self, ts, _):
         self.status_message(f"tail systemd logs for {self.config.services}")
 
         start_timestamp = None
@@ -67,71 +67,7 @@ class SystemDLogViewer(LogViewer):
         else:
             command = f"journalctl -f {service_flags} -n '{self.config.lookback}' --output json"
 
-        self.status_message(f"\n---\n>>> {command}\n")
-
-        ch = ts.open_session()
-        ch.exec_command(command)
-        stdout = ch.makefile()
-        stderr = ch.makefile_stderr()
-
-        buffers = {}
-        buffers['stdout'] = bytes()
-        buffers['stderr'] = bytes()
-
-        def recv_for_and_parse_newlines(ch, buffer):
-            if buffer == 'stdout':
-                out = ch.recv(8192)
-            else:
-                out = ch.recv_stderr(8192)
-
-            if not out:
-                print("not out")
-                return False
-
-            buffers[buffer] += out
-            ends_newline = (buffers[buffer][-1] == '\n')
-            lines = buffers[buffer].splitlines()
-
-            if ends_newline: # if it ended exacly in a newline, start again
-                buffers[buffer] = bytes()
-                all_lines = lines
-            else: # otherwise keep the remaining bit of the last line
-                buffers[buffer] = lines[-1]
-                all_lines = lines[:-1]
-
-            # now decode all the lines
-            for line in all_lines:
-                read_line = line.decode('UTF-8')
-                self.console_message(read_line, is_stderr=(buffer == 'stderr'))
-            return True
-
-        buffer = bytes()
-        while True:
-            r,w,e = select.select([ch],[],[ch], 1.0)
-            if ch in r:
-                if ch.recv_ready():
-                    if not recv_for_and_parse_newlines(ch, 'stdout'):
-                        break
-                if ch.recv_stderr_ready():
-                    if not recv_for_and_parse_newlines(ch, 'stderr'):
-                        break
-
-                if ch in e:
-                    self.error_message("fd entered error list")
-                    ch.close()
-                    return
-                else:
-                    ts.send_ignore()
-
-        exit_status = ch.recv_exit_status()
-        msg = f"\nCommand exited with status {exit_status}\n"
-        msg += f"Retrying in {self.logviewer_config.retry_seconds}s\n"
-        if exit_status == 0:
-            self.status_message(msg)
-        else:
-            self.error_message(msg)
-
-        self.data_updated = True
+        super().run_tail_command(ts, command)
 
     def filter(self, json_text):
         out_msg = SystemDLogMessage(json_text, self.show_service_name)
