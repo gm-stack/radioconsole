@@ -399,9 +399,6 @@ class WaterfallDisplay(app):
             return True
 
         if self.absmode:
-            if self.current_freq is not None:
-                self.draw_marker(self.current_freq, screen, highlight=True)
-
             if self.abs_freq_low is not None and self.abs_freq_high is not None:
                 bw = (self.abs_freq_high - self.abs_freq_low)
                 if bw < 200_000: # 100khz
@@ -413,6 +410,9 @@ class WaterfallDisplay(app):
                     self.draw_marker(i, screen)
                 if self.abs_freq_high not in markers:
                     self.draw_marker(self.abs_freq_high, screen)
+
+            if self.current_freq is not None:
+                self.draw_marker(self.current_freq, screen, highlight=True)
         elif not self.absmode and ffts:
             self.draw_marker(self.current_freq, screen, highlight=True)
             #for m in self.REL_BANDWIDTHS[self.rel_bandwidth]:
