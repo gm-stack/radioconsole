@@ -121,9 +121,10 @@ class DockerStatus(LogViewer):
                 manager=self.gui,
                 split='no_label',
                 colourmap={
-                    'activating': (255, 165, 0, 255),
-                    'active': (0, 255, 0, 255),
-                    'failed': (255, 0, 0, 255),
+                    'restarting': (255, 165, 0, 255),
+                    'running': (0, 255, 0, 255),
+                    'dead': (255, 0, 0, 255),
+                    'exited': (255, 0, 0, 255),
                     None: (127, 127, 127, 255)
                 },
                 colourmap_mode='equals',
