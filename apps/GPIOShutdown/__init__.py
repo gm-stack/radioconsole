@@ -1,11 +1,11 @@
 import pygame
 
 from ..common import time_format
-from ..common.LogViewerStatusApp import LogViewerStatusApp
+from ..common.LogViewerStatusApp import SystemDLogViewerStatusApp
 from util import stat_display
 from .status_icon import gpio_shutdown_status_icon
 
-class GPIOShutdown(LogViewerStatusApp):
+class GPIOShutdown(SystemDLogViewerStatusApp):
 
     default_config = {
         "port": 22,
@@ -15,6 +15,8 @@ class GPIOShutdown(LogViewerStatusApp):
         "command_button_h": 48,
         "command_buttons_x": 3,
         "command_button_margin": 2,
+        "shutdown_level": "high",
+        "powered_level": "low",
         "filter_lines": [],
         "commands": {
             'Enable GPIO Shutdown': 'sudo service gpio_shutdown start',
@@ -40,7 +42,7 @@ class GPIOShutdown(LogViewerStatusApp):
         self.shutdown_timer_running = False
         self.shutdown_timer = None
 
-        def pin_low(msg, match):
+        def pin_powered(msg, match):
             self.shutdown_timer = float(self.GPIOShutdownConfig.shutdown_time)
             self.status = "pwr on"
             self.colour = (0xFF,0xFF,0xFF)
@@ -51,7 +53,7 @@ class GPIOShutdown(LogViewerStatusApp):
             self.countdown_label.set_text("gpio_shutdown running, power keyed")
             self.data_updated = True
 
-        def pin_high(msg, match):
+        def pin_shutdown(msg, match):
             self.shutdown_timer = float(self.GPIOShutdownConfig.shutdown_time)
             self.status = "pwr off"
             self.colour = (0xFF,0xA5,0x00)
@@ -62,7 +64,7 @@ class GPIOShutdown(LogViewerStatusApp):
             self.countdown_label.set_text("power unkeyed, will shut down")
             self.data_updated = True
 
-        def pin_still_high(msg, match):
+        def pin_still_shutdown(msg, match):
             self.shutdown_timer = float(match.group(1))
             self.status = "pwr off"
             self.colour = (0xFF,0xA5,0x00)
@@ -97,9 +99,9 @@ class GPIOShutdown(LogViewerStatusApp):
             self.data_updated = True
 
         self.process_messages = [
-            {"r": r'pin \d* state is now low', 'func': pin_low},
-            {"r": r'pin \d* state is now high', 'func': pin_high},
-            {"r": r'pin \d* still high, shutdown in (\d*)s', 'func': pin_still_high},
+            {"r": f'pin \d* state is now {self.GPIOShutdownConfig.powered_level}', 'func': pin_powered},
+            {"r": f'pin \d* state is now {self.GPIOShutdownConfig.shutdown_level}', 'func': pin_shutdown},
+            {"r": f'pin \d* still {self.GPIOShutdownConfig.shutdown_level}, shutdown in (\d*)s', 'func': pin_still_shutdown},
             {"r": r'Stopped Radioconsole gpio_shutdown', 'func': radioconsole_stopped},
             {"r": r'Stopping Radioconsole gpio_shutdown...', 'func': radioconsole_stopped}, # not sure why we don't get stopped msg
             {"r": r'Started Radioconsole gpio_shutdown.', 'func': radioconsole_started}

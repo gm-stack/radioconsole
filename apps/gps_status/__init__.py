@@ -30,6 +30,8 @@ class gps_status(app):
         self.status_icon.update(mode='-', sats='0/0', maidenhead=self.mh, icon='warning_red')
         self.status_icons_updated = True
 
+        self.skydata = []
+
         # actually, start it
         self.backend_thread = None
         self.restart_backend_thread()
@@ -102,7 +104,8 @@ class gps_status(app):
                     self.data_updated = True
 
                     self.tpv = self.gps_data.get('TPV',{})
-                    self.skydata = self.gps_data.get('SKY',{}).get('satellites', [])
+                    if 'satellites' in self.gps_data.get('SKY',{}): # Some SKY messages do not include satellites field - this stops flicking by checking if the satellites key is avalaible
+                        self.skydata = self.gps_data.get('SKY',{})['satellites']
                     self.numsats = len(self.skydata)
                     self.numused = len([i for i in self.skydata if i['used']])
                     self.sats_text = f"{self.numused}/{self.numsats}"
@@ -158,7 +161,7 @@ class gps_status(app):
         status = " "
         if not sat['used']:
             status = "!"
-        if sat['health'] != 1:
+        if 'health' in sat and sat['health'] != 1:
             status = "+"
         return f"{status}{prn}"
 
@@ -178,7 +181,8 @@ class gps_status(app):
 
             sats_text = ""
             if 'SKY' in self.gps_data:
-                self.skydata = self.gps_data['SKY'].get('satellites', [])
+                if 'satellites' in self.gps_data['SKY']:
+                    self.skydata = self.gps_data['SKY']['satellites']
                 self.gps_satview.update_data(self.skydata, self.tpv, self.mh)
                 for gnss_id, gnss in GNSS_IDS.items():
                     # not in ui
@@ -209,7 +213,7 @@ class gps_status(app):
                                 e.text_colour = (0x00,signal,0x00)
                             else:
                                 e.text_colour = (0x66,0x66,0x66)
-                            if sat['health'] != 1:
+                            if 'health' in sat and sat['health'] != 1:
                                 e.text_colour = (0xCC,0x00,0x00)
                             e.rebuild()
                         else:
