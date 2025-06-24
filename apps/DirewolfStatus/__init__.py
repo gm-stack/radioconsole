@@ -12,10 +12,10 @@ import crash_handler
 from .status_icon import direwolf_status_icon
 from ..common.time_format import hh_mm_ss_since
 from ..common.layout_utils import split_rect_horz
-from ..common.LogViewerStatusApp import LogViewerStatusApp
+from ..common.LogViewerStatusApp import DockerLogViewerStatusApp
 from util import stat_view, stat_display
 
-class DirewolfStatus(LogViewerStatusApp):
+class DirewolfStatus(DockerLogViewerStatusApp):
     default_config = {
         "port": 22,
         "username": "pi",
@@ -32,7 +32,7 @@ class DirewolfStatus(LogViewerStatusApp):
 
     def __init__(self, bounds, config, name):
 
-        self.services = ['direwolf', 'direwolf-digi']
+        self.services = ['carpi-compose-direwolf-hf-aprs-digi-1', 'carpi-compose-direwolf-hf-aprs-1']
 
         self.ui = {}
         y = bounds.y

@@ -1,9 +1,9 @@
 import pygame
 
-from ..common.LogViewerStatusApp import LogViewerStatusApp
+from ..common.LogViewerStatusApp import DockerLogViewerStatusApp
 from util import stat_view, stat_display
 
-class ARDOPStatus(LogViewerStatusApp):
+class ARDOPStatus(DockerLogViewerStatusApp):
     default_config = {
         "port": 22,
         "username": "pi",
@@ -20,7 +20,7 @@ class ARDOPStatus(LogViewerStatusApp):
 
     def __init__(self, bounds, config, name):
 
-        self.services = ['ardopc']
+        self.services = ['carpi-compose-ardopcf-1']
 
         self.ui = {}
         y = bounds.y
