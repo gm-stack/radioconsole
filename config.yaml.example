@@ -2,6 +2,7 @@ system:
   display:
     display_w: 800
     display_h: 480
+    rotate: none
 
 modules:
   panadapter:
