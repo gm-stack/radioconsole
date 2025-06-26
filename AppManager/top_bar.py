@@ -43,7 +43,7 @@ class top_bar(object):
             icon_w = icon.get_width()
             icon_h = icon.get_height()
             xpos -= (icon_w + 2)
-            screen.blit(icon, (xpos, ypos - icon_h - 2))
+            screen.surf.blit(icon, (xpos, ypos - icon_h - 2))
 
     def updateAppLabel(self, appname):
         self.appname_label.set_text(appname)
@@ -53,8 +53,8 @@ class top_bar(object):
 
     def draw(self, screen):
         if self.redraw:
-            pygame.draw.rect(screen, (64, 64, 64), self.bounds)
-            self.gui.draw_ui(screen)
+            pygame.draw.rect(screen.surf, (64, 64, 64), self.bounds)
+            self.gui.draw_ui(screen.surf)
             self.draw_status_icons(screen)
             self.redraw = False
             return True

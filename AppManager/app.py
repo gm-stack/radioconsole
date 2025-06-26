@@ -79,7 +79,7 @@ class app(object):
         if self.had_event or self._had_update:
             self.had_event = False
             self._had_update = False
-            self.gui.draw_ui(screen)
+            self.gui.draw_ui(screen.surf)
             return True
         return False
 

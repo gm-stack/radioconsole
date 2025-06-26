@@ -46,7 +46,7 @@ class appSwitcher(object):
         tbdraw = self.top_bar.draw(screen)
         if self.FRONTMOST_APP == 'switcher':
             if self.redraw:
-                self.gui.draw_ui(screen)
+                self.gui.draw_ui(screen.surf)
                 self.redraw = False
                 return True
             return False or tbdraw
@@ -104,10 +104,10 @@ class appSwitcher(object):
         self.FRONTMOST_APP = appname
         self.top_bar.updateAppLabel(appname)
         if redraw:
-            self.screen.fill((0, 0, 0))
+            self.screen.surf.fill((0, 0, 0))
             if appname == 'switcher':
                 self.redraw = True
-                self.screen.blit(
+                self.screen.surf.blit(
                     self.logo,
                     (cfg.display.display_w - self.logo_size[0],
                     cfg.display.display_h - self.logo_size[1])

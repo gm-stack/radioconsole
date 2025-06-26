@@ -14,6 +14,7 @@ import AppManager
 import apps
 import pygame_ft5406
 import splash_screen
+import display_rotation
 
 ts = pygame_ft5406.ft5406Events()
 
@@ -21,7 +22,12 @@ pygame.display.init()
 ts.start()
 pygame.freetype.init()
 pygame.font.init()
-screen = pygame.display.set_mode(cfg.display.size)
+
+screen = display_rotation.RotationAdaptor(cfg.display.size, cfg.display.rotate)
+
+display = pygame.display.set_mode(screen.get_display_size())
+screen.set_display(display)
+
 
 splash = splash_screen.splash_screen(screen)
 splash.draw_splash()
@@ -50,6 +56,7 @@ try:
     am.register_app('gpio_shutdown_status', apps.GPIOShutdown)
     am.register_app('ardop_status', apps.ARDOPStatus)
     am.register_app('direwolf_status', apps.DirewolfStatus)
+    am.register_app('usb_status', apps.USBStatus)
 
     splash.update_status("instantiating apps")
     if len(sys.argv) > 1:
@@ -68,7 +75,7 @@ try:
             sw.process_events(e)
         sw.update(time_delta)
         if sw.draw(screen):
-            pygame.display.update()
+            screen.update()
 
 # pylint: disable=broad-except
 except Exception as e:

@@ -382,7 +382,7 @@ class WaterfallDisplay(app):
         else:
              self.display_bandwidth = self.rel_bandwidth
 
-        self.gui.draw_ui(screen)
+        self.gui.draw_ui(screen.surf)
 
         ffts = []
         items = self.fft_queue.qsize()

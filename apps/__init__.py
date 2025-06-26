@@ -9,3 +9,4 @@ from .DockerStatus import DockerStatus
 from .GPIOShutdown import GPIOShutdown
 from .ARDOPStatus import ARDOPStatus
 from .DirewolfStatus import DirewolfStatus
+from .USBStatus import USBStatus

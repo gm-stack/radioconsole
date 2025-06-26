@@ -18,25 +18,25 @@ class splash_screen():
     def draw_splash(self):
         logo = pygame.image.load(os.path.join(base_path, "logo.png"))
         logo_size = logo.get_size()
-        self.screen.blit(
+        self.screen.surf.blit(
             logo,
             ((self.screen_size[0] - logo_size[0])/2 + self.LOGO_OFFSET[0],
             (self.screen_size[1] - logo_size[1])/2 + self.LOGO_OFFSET[1])
         )
-        pygame.display.update()
+        self.screen.update()
 
     def update_status(self, msg):
         text = self.FONT.render(msg, True, (255, 255, 255))
         text_size = text.get_size()
-        pygame.draw.rect(self.screen, (0, 0, 0),
+        pygame.draw.rect(self.screen.surf, (0, 0, 0),
         (
             0, self.screen_size[1] - text_size[1],
             self.screen_size[0], text_size[1]
         ))
 
-        self.screen.blit(
+        self.screen.surf.blit(
             text,
             ((self.screen_size[0] - text_size[0]) / 2,
             self.screen_size[1] - text_size[1])
         )
-        pygame.display.update()
+        self.screen.update()

@@ -66,7 +66,7 @@ def crash(exc, is_thread=False, threadmsg=None):
 
     print(f"---\n{tb}\n---", file=sys.stderr)
 
-    screen.fill((0, 0, 0))
+    screen.surf.fill((0, 0, 0))
 
     font = fonts.get_font("FiraCode", "Regular", 14)
     header = "*"*80
@@ -82,9 +82,9 @@ def crash(exc, is_thread=False, threadmsg=None):
     lineheight = font.get_linesize()
     for i, line in enumerate(msg.splitlines()):
         text = font.render(line, True, (255, 0, 0))
-        screen.blit(text, (8, 8+(i*lineheight)))
+        screen.surf.blit(text, (8, 8+(i*lineheight)))
 
-    pygame.display.update()
+    screen.update()
 
     while True:
         for e in pygame.event.get():
