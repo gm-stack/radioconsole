@@ -5,6 +5,13 @@ system:
     rotate: none
     disable_mouse: false
     ft5406: false
+    top_bar_size: 64
+    top_bar_app_label_width: 192
+    target_fps: 60
+  switcher:
+    buttons_x: 3
+    button_h: 96
+    button_margin: 2
 
 modules:
   panadapter:
