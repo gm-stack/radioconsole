@@ -1,8 +1,8 @@
 import pygame
 
+from util import stat_display
 from ..common import time_format
 from ..common.LogViewerStatusApp import SystemDLogViewerStatusApp
-from util import stat_display
 from .status_icon import gpio_shutdown_status_icon
 
 class GPIOShutdown(SystemDLogViewerStatusApp):
@@ -118,7 +118,7 @@ class GPIOShutdown(SystemDLogViewerStatusApp):
                     manager=self.gui,
                     text='--:--.---'
         )
-        stat_loc.midtop = (400,bounds.y+125)
+        stat_loc.midtop = (bounds.w/2,bounds.y+125)
         stat_loc.height = 50
         self.countdown_label = stat_display(
                     object_id="#countdown_label",

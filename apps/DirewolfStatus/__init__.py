@@ -104,7 +104,7 @@ class DirewolfStatus(DockerLogViewerStatusApp):
 
         # todo: word wrap
         self.ui['rx_packet'] = stat_view(
-            relative_rect=pygame.Rect(0, y, 800, 64),
+            relative_rect=pygame.Rect(0, y, bounds.w, 64),
             name='rx_rf',
             manager=self.gui,
             split='lr',
@@ -112,20 +112,20 @@ class DirewolfStatus(DockerLogViewerStatusApp):
         )
         y += 64
         self.ui['rx_packet_ago'] = stat_view(
-            relative_rect=pygame.Rect(0, y, 400, 32),
+            relative_rect=pygame.Rect(0, y, bounds.w/2, 32),
             name='time ago',
             manager=self.gui,
             split='lr',
             label_s=100
         )
         self.ui['audio_level_pkt'] = stat_view(
-            relative_rect=pygame.Rect(400, y, 200, 32),
+            relative_rect=pygame.Rect(bounds.w/2, y, bounds.w/4, 32),
             name='pkt_level',
             manager=self.gui,
             split='lr'
         )
         self.ui['audio_level'] = stat_view(
-            relative_rect=pygame.Rect(600, y, 200, 32),
+            relative_rect=pygame.Rect(600, y, bounds.w/4, 32),
             name='audio_level',
             manager=self.gui,
             split='lr'
@@ -133,7 +133,7 @@ class DirewolfStatus(DockerLogViewerStatusApp):
 
         y += 40
         self.ui['ig_tx_packet'] = stat_view(
-            relative_rect=pygame.Rect(0, y, 800, 32),
+            relative_rect=pygame.Rect(0, y, bounds.w, 32),
             name='tx_igate',
             manager=self.gui,
             split='lr',
@@ -141,14 +141,14 @@ class DirewolfStatus(DockerLogViewerStatusApp):
         )
         y += 32
         self.ui['ig_tx_packet_ago'] = stat_view(
-            relative_rect=pygame.Rect(0, y, 400, 32),
+            relative_rect=pygame.Rect(0, y, bounds.w/2, 32),
             name='time ago',
             manager=self.gui,
             split='lr',
             label_s=100
         )
         self.ui['igate_server'] = stat_view(
-            relative_rect=pygame.Rect(400,y,400,32),
+            relative_rect=pygame.Rect(bounds.w/2,y,bounds.w/2,32),
             name='igate_s',
             manager=self.gui,
             split='lr',
@@ -157,7 +157,7 @@ class DirewolfStatus(DockerLogViewerStatusApp):
 
         y += 40
         self.ui['rf_tx_packet'] = stat_view(
-            relative_rect=pygame.Rect(0, y, 800, 32),
+            relative_rect=pygame.Rect(0, y, bounds.w, 32),
             name='tx_rf',
             manager=self.gui,
             split='lr',

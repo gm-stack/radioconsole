@@ -117,14 +117,14 @@ class ARDOPStatus(DockerLogViewerStatusApp):
         y += 40
 
         self.ui['input_peaks'] = stat_display(
-            relative_rect=pygame.Rect(0, y, 800, 32),
+            relative_rect=pygame.Rect(0, y, bounds.w, 32),
             manager=self.gui,
             text="input_peaks"
         )
 
         y += 32
         self.ui['status'] = stat_view(
-            relative_rect=pygame.Rect(0, y, 800, 32),
+            relative_rect=pygame.Rect(0, y, bounds.w, 32),
             manager=self.gui,
             name="status",
             split='lr',

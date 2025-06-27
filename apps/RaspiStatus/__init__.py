@@ -36,14 +36,14 @@ class RaspiStatus(SSHBackgroundThreadApp):
 
             self.ui_element_values[host]['id'] = stat_label(
                 object_id="#param_label_top_lighter",
-                relative_rect=pygame.Rect(0, y, 800, 32),
+                relative_rect=pygame.Rect(0, y, bounds.w, 32),
                 text='', manager=self.gui
             )
             y += 32
 
             for ui_element, unit in {'frequency': '', 'cpu_temp': "\N{DEGREE SIGN}C", 'free_mem': 'MB'}.items():
                 self.ui_element_graphs[host][ui_element] = stat_view_graph(
-                    relative_rect=pygame.Rect(0, y, 800, 32),
+                    relative_rect=pygame.Rect(0, y, bounds.w, 32),
                     text_w=256,
                     name=ui_element,
                     manager=self.gui,
@@ -219,7 +219,7 @@ class RaspiStatus(SSHBackgroundThreadApp):
                         cpu_h = int(64 / data['n_cpus'])
                         for i in range(data['n_cpus']):
                             self.ui_element_graphs[host][f"cpu{i}_percent"] = timegraph(
-                                pygame.Rect(472, y+(i*cpu_h), 328, cpu_h),
+                                pygame.Rect(472, y+(i*cpu_h), self.bounds.w - 472, cpu_h),
                                 max_value=100.0,
                                 min_value=0.0
                             )
