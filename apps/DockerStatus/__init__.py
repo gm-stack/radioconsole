@@ -5,7 +5,7 @@ import re
 import pygame
 import pygame_gui
 
-from util import stat_label, stat_view, rc_button
+from util import stat_label, stat_view, rc_button, layouts
 from .status_icon import systemd_status_icon
 
 from ..LogViewer import LogViewer
@@ -40,27 +40,21 @@ class DockerStatus(LogViewer):
 
         self.brackets_regex = re.compile(r'([(\[{].*?[)\]}][\s*])')
 
-        y_off = bounds.y
-        x = 0
-
         self.status_icon = systemd_status_icon()
         self.status_icons = [self.status_icon.surface]
         self.status_icon.update(0,0,0,icon=None)
         self.status_icons_updated = True
 
-        def create_ui(service):
-            nonlocal y_off
-            nonlocal x
-
-            y = y_off
-
+        def create_ui(service, rect):
             self.ui_element_values[service] = {}
 
             self.ui_element_start_stop_buttons[rc_button(
                 object_id="#service_start_button",
                 relative_rect=pygame.Rect(
-                    x + 315, y,
-                    80, 48
+                    rect.x + (rect.w - 80),
+                    bounds.y + rect.y,
+                    80,
+                    48
                 ),
                 text="Start",
                 manager=self.gui
@@ -68,24 +62,33 @@ class DockerStatus(LogViewer):
 
             self.ui_element_values[service]['description'] = stat_label(
                 object_id="#service_label",
-                relative_rect=pygame.Rect(x+80, y, 235, 32),
+                relative_rect=pygame.Rect(
+                    rect.x + 80,
+                    bounds.y + rect.y,
+                    rect.w - 160,
+                    32
+                ),
                 text=service, manager=self.gui
             )
 
             self.ui_element_status_buttons[rc_button(
                 object_id="#command_button",
                 relative_rect=pygame.Rect(
-                    x, y,
+                    rect.x,
+                    bounds.y + rect.y,
                     80, 48
                 ),
                 text="Status",
                 manager=self.gui
             )] = service
 
-            y += 24
-
             self.ui_element_values[service]['load'] = stat_view(
-                relative_rect=pygame.Rect(x + 80, y, 78, 24),
+                relative_rect=pygame.Rect(
+                    rect.x + 80,
+                    bounds.y + rect.y + 24,
+                    rect.w - 160,
+                    24
+                ),
                 name='load',
                 manager=self.gui,
                 split='no_label',
@@ -100,7 +103,12 @@ class DockerStatus(LogViewer):
             )
 
             self.ui_element_values[service]['sub'] = stat_view(
-                relative_rect=pygame.Rect(x + 80 + 78, y, 78, 24),
+                relative_rect=pygame.Rect(
+                    rect.x + 80 + 78,
+                    bounds.y + rect.y + 24,
+                    78,
+                    24
+                ),
                 name='sub',
                 manager=self.gui,
                 split='no_label',
@@ -116,7 +124,12 @@ class DockerStatus(LogViewer):
             )
 
             self.ui_element_values[service]['active'] = stat_view(
-                relative_rect=pygame.Rect(x + 10 + (78*2), y, 148, 24),
+                relative_rect=pygame.Rect(
+                    rect.x + 10 + (78*2),
+                    bounds.y + rect.y + 24,
+                    148,
+                    24
+                ),
                 name='active',
                 manager=self.gui,
                 split='no_label',
@@ -131,15 +144,15 @@ class DockerStatus(LogViewer):
                 object_id_value="#service_status_value"
             )
 
+        object_pos, num_rows = layouts.object_layout(
+            height=48,
+            min_width=400,
+            screen_width=bounds.w,
+            num_objects=len(self.config.services)
+        )
 
-            if (x + 400) >= bounds.w:
-                y_off += 58
-                x = 0
-            else:
-                x += 400
-
-        for service in self.config.services:
-            create_ui(service)
+        for service, rect in zip(self.config.services, object_pos):
+            create_ui(service, rect)
 
         self.run_ssh_func_persistent(
             self.config,
@@ -154,9 +167,9 @@ class DockerStatus(LogViewer):
 
         self.remaining_bounds = pygame.Rect(
             0,
-            y_off,
+            bounds.y + num_rows * 48,
             bounds.w,
-            bounds.h - (y_off - bounds.y)
+            bounds.h - ((num_rows * 48) + bounds.y)
         )
         # resize terminal view down to cover only
         # remaining space, as it inited fullscreen
@@ -269,14 +282,14 @@ class DockerStatus(LogViewer):
                     "load": 'loaded',
                     "active": docker_containers[service]['State'],
                     "status": docker_containers[service]['Status']
-                }     
+                }
             else:
                 container_status[service] = {
                     "description": service,
                     "load": 'unloaded',
                     "active": 'missing',
                     "status": ''
-                }           
+                }
 
         prev_service_status = self.service_status
         self.service_status = container_status

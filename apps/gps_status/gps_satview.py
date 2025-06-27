@@ -81,6 +81,13 @@ class gps_satview(object):
             for deg,label in compass.items()
         }
 
+
+        self.satview_radius = int(0.375 * self.bounds.w)
+        self.satview_centre = pygame.math.Vector2(
+            self.bounds.w / 2,
+            (self.bounds.h / 2) + 10
+        )
+
     def gps_mode(self, m):
         return {
             0: 'UNK',
@@ -107,9 +114,6 @@ class gps_satview(object):
 
         self.surf.fill((0, 0, 0))
         self.surf.lock()
-
-        self.satview_radius = 150
-        self.satview_centre = pygame.math.Vector2(200,210)
 
         self.track = tpv.get('track', 0.0)
 

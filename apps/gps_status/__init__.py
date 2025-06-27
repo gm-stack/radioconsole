@@ -36,10 +36,16 @@ class gps_status(app):
         self.backend_thread = None
         self.restart_backend_thread()
 
+        # find biggest square for gps satview
+        satview_size = self.bounds.h
+
         self.gps_satview = gps_satview(pygame.Rect(
-            self.bounds.x + 400, self.bounds.y,
-            400, self.bounds.h
+            self.bounds.w - satview_size,
+            self.bounds.y,
+            satview_size, satview_size
         ))
+
+        non_satview_size = self.bounds.w - satview_size
 
         y = bounds.y
 
@@ -48,7 +54,7 @@ class gps_status(app):
 
         self.ui_element_values['status'] = stat_label(
             object_id="#param_label_top",
-            relative_rect=pygame.Rect(0, y, 400, 32),
+            relative_rect=pygame.Rect(0, y, non_satview_size, 32),
             text=f"{self.config.host}:{self.config.port}", manager=self.gui
         )
         y += 32
@@ -61,7 +67,7 @@ class gps_status(app):
 
             self.ui_element_labels[f"gnss_{gnss_id}"] = stat_label(
                 object_id=f"#gnss_label_{gnss['prefix']}",
-                relative_rect=pygame.Rect(0, y, 400, 32),
+                relative_rect=pygame.Rect(0, y, non_satview_size, 32),
                 text=f"{gnss['prefix']}: {gnss['name']}",
                 manager=self.gui
             )
@@ -69,7 +75,7 @@ class gps_status(app):
             self.ui_element_values[f"gnss_{gnss_id}"] = []
             num_elements = 16
             for i in range(num_elements):
-                elem_width = 400 / num_elements
+                elem_width = non_satview_size / num_elements
                 self.ui_element_values[f"gnss_{gnss_id}"].append(stat_display(
                     relative_rect=pygame.Rect(i*elem_width, y, elem_width, 32),
                     text='',
