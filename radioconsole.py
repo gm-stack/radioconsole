@@ -3,6 +3,7 @@ signal.signal(signal.SIGHUP, lambda s, f: None)
 # pylint: disable=wrong-import-position
 
 import sys
+import os
 
 import pygame
 import pygame.freetype
@@ -15,26 +16,40 @@ import apps
 import pygame_ft5406
 import splash_screen
 import display_rotation
+import ts_to_mouse
 
-ts = pygame_ft5406.ft5406Events()
+if cfg.display.disable_mouse:
+    print("Disabling mouse")
+    os.environ['SDL_NOMOUSE'] = '1'
+    os.environ['SDL_MOUSEDEV'] = '/dev/null'
+
+ts = None
+if cfg.display.ft5406:
+    ts = pygame_ft5406.ft5406Events()
 
 pygame.display.init()
-ts.start()
+if ts:
+    ts.start()
 pygame.freetype.init()
 pygame.font.init()
 
+if cfg.display.disable_mouse:
+    pygame.mouse.set_visible(False)
+
 screen = display_rotation.RotationAdaptor(cfg.display.size, cfg.display.rotate)
+ts_event_converter = ts_to_mouse.TouchEventAdaptor(cfg.display.size, screen.angle)
 
 display = pygame.display.set_mode(screen.get_display_size())
+print(f"Using display driver {pygame.display.get_driver()}")
 screen.set_display(display)
-
 
 splash = splash_screen.splash_screen(screen)
 splash.draw_splash()
 
 def safe_exit():
     pygame.quit()
-    ts.stop()
+    if ts:
+        ts.stop()
     sys.exit()
 
 crash_handler.register(screen, safe_exit)
@@ -70,6 +85,8 @@ try:
     while True:
         time_delta = clock.tick(cfg.display.target_fps)/1000.0
         for e in pygame.event.get():
+            if ts_event_converter.convert(e):
+                continue
             if e.type is pygame.QUIT:
                 safe_exit()
             sw.process_events(e)

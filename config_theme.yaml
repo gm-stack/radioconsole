@@ -25,7 +25,7 @@ defaults:
     unfilled_bar: "#CCCCCC"
   font:
     name: "B612"
-    size: 14
+    size: 16
 button:
   colours:
     normal_bg: "#4c5052,#3c4042,90"
@@ -42,6 +42,10 @@ label:
   font:
     name: "B612"
     size: 14
+'#launcher_button':
+  font:
+    name: "B612Mono"
+    size: 18
 '#param_label':
   colours:
     normal_text: "#FF00FF"

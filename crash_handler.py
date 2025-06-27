@@ -88,5 +88,5 @@ def crash(exc, is_thread=False, threadmsg=None):
 
     while True:
         for e in pygame.event.get():
-            if e.type in (pygame.QUIT, pygame.MOUSEBUTTONDOWN, pygame.KEYDOWN):
+            if e.type in (pygame.QUIT, pygame.MOUSEBUTTONDOWN, pygame.FINGERDOWN, pygame.KEYDOWN):
                 safe_exit()

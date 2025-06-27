@@ -32,6 +32,3 @@ class RotationAdaptor():
         rotated = pygame.transform.rotate(self.surf, self.angle)
         self.display.blit(rotated, (0,0))
         return pygame.display.update()
-
-# 90 - left
-# -90 = right

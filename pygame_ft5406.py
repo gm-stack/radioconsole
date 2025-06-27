@@ -10,8 +10,6 @@ class ft5406Events(object):
         try:
             import ft5406
             print("Using FT5406 driver, disabling SDL mouse support")
-            os.environ['SDL_NOMOUSE'] = '1'
-            os.environ['SDL_MOUSEDEV'] = '/dev/null'
 
             # pylint: disable=too-few-public-methods
             class TouchscreenDaemonRun(ft5406.Touchscreen):

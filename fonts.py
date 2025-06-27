@@ -36,6 +36,10 @@ def load_fonts(gui):
             {'name': font_name, 'point_size': size, 'style': 'regular'}
             for font_name in fonts
         ])
+        gui.preload_fonts([
+            {'name': font_name, 'point_size': size, 'style': 'bold'}
+            for font_name in fonts
+        ])
 
 def get_font(font_name, font_style, font_size):
     key = (font_name, font_style, font_size)

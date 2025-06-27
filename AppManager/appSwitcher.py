@@ -52,7 +52,7 @@ class appSwitcher(object):
             return False or tbdraw
         else:
             # TODO: return dirty rects?
-            return self.running_apps[self.FRONTMOST_APP].draw(screen) or tbdraw
+            return self.running_apps[self.FRONTMOST_APP].draw(screen.surf) or tbdraw
 
     def collect_status_icons(self):
         if any([app.status_icons_updated for app in self.running_apps.values()]):
@@ -83,6 +83,7 @@ class appSwitcher(object):
         button_row = button_num // cfg.switcher.buttons_x
 
         self.running_apps_buttons[appname] = pygame_gui.elements.UIButton(
+            object_id="#launcher_button",
             relative_rect=pygame.Rect(
                 cfg.switcher.button_margin + ((button_w + cfg.switcher.button_margin) * button_col),
                 cfg.display.top_bar_size+4 + cfg.switcher.button_margin + \

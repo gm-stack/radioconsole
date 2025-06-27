@@ -1,8 +1,10 @@
 system:
   display:
-    display_w: 800
-    display_h: 480
+    display_w: 1280
+    display_h: 720
     rotate: none
+    disable_mouse: false
+    ft5406: false
 
 modules:
   panadapter:
