@@ -45,7 +45,7 @@ label:
 '#launcher_button':
   font:
     name: "B612Mono"
-    size: 18
+    size: 20
 '#param_label':
   colours:
     normal_text: "#FF00FF"
