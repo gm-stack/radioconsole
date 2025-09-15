@@ -44,7 +44,7 @@ class ARDOPStatus(DockerLogViewerStatusApp):
             {"r": r'Setting ProtocolMode to (.*)\.', "ui": ['protomode']},
         ]
 
-        super().__init__(terminal_bounds, config, "ArdopLogViewer")
+        super().__init__(terminal_bounds, config, name)
 
         self.ui['rx_frame'] = stat_view(
             relative_rect=pygame.Rect(0, y, 300, 32),

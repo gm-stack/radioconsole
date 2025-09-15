@@ -107,7 +107,7 @@ class GPIOShutdown(SystemDLogViewerStatusApp):
             {"r": r'Started Radioconsole gpio_shutdown.', 'func': radioconsole_started}
         ]
 
-        super().__init__(terminal_bounds, config, "GPIOLogViewer")
+        super().__init__(terminal_bounds, config, name)
 
         stat_loc = pygame.Rect((0,0),(bounds.w,125))
         stat_loc.midtop = (bounds.w/2,bounds.y)

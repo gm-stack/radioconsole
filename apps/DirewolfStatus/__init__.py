@@ -100,7 +100,7 @@ class DirewolfStatus(DockerLogViewerStatusApp):
             {"r": r'.* audio level = (\d*)\(', 'ui': ['audio_level_pkt']}
         ]
 
-        super().__init__(terminal_bounds, config, "DirewolfLogViewer")
+        super().__init__(terminal_bounds, config, name)
 
         # todo: word wrap
         self.ui['rx_packet'] = stat_view(

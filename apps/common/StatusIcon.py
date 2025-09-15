@@ -6,10 +6,10 @@ import fonts
 IMAGE_CACHE = None
 
 class status_icon(object):
-    def __init__(self, font_size=12):
+    def __init__(self, font_size=16):
         self.overlay_icon = None
         self.underlay_icon = None
-        self.surface = pygame.surface.Surface((60,60), pygame.SRCALPHA)
+        self.surface = pygame.surface.Surface((92,90), pygame.SRCALPHA)
         self.bgcolour = (0,0,0,255)
         self.font = fonts.get_font("B612", "Regular", font_size)
         self.clear()

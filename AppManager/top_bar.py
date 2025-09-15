@@ -9,6 +9,8 @@ class top_bar(object):
     switcher = None
     gui = None
     redraw = True
+    mouse_down = False
+    mouse_pos = None
 
     def __init__(self, sw):
         self.bounds = (0, 0, cfg.display.display_w, cfg.display.top_bar_size)
@@ -29,21 +31,45 @@ class top_bar(object):
             text='to switcher',
             manager=self.gui
         )
-        self.status_icons = []
+        self.status_icons = {}
 
-    def set_status_icons(self, icons):
+    def set_status_icons(self, icons: dict):
         self.status_icons = icons
         self.redraw = True
 
-    def draw_status_icons(self, screen):
+    def draw_status_icons(self, screen, mouse=None):
         xpos = cfg.display.display_w
         ypos = cfg.display.top_bar_size
 
-        for icon in self.status_icons:
+        for i, (icon, app) in enumerate(self.status_icons.items()):
             icon_w = icon.get_width()
             icon_h = icon.get_height()
             xpos -= (icon_w + 2)
-            screen.surf.blit(icon, (xpos, ypos - icon_h - 2))
+            icon_rect = pygame.Rect(xpos, ypos - icon_h - 4, icon_w, icon_h)
+
+            if self.mouse_down and icon_rect.collidepoint(self.mouse_pos):
+                border = pygame.Rect(xpos - 2, ypos - icon_h - 6, icon_w + 4, icon_h + 4)
+                pygame.draw.rect(screen.surf, (0, 255, 0), border)
+
+            screen.surf.blit(icon, (xpos, ypos - icon_h - 4))
+            if self.switcher.FRONTMOST_APP == app:
+                underline = pygame.Rect(xpos, icon_h, icon_w, 2)
+                pygame.draw.rect(screen.surf, (0, 255, 0), underline)
+
+    def switch_if_status_icon_selected(self):
+        # FIXME: less code duplication:
+        xpos = cfg.display.display_w
+        ypos = cfg.display.top_bar_size
+        for i, (icon, app) in enumerate(self.status_icons.items()):
+            icon_w = icon.get_width()
+            icon_h = icon.get_height()
+            xpos -= (icon_w + 2)
+            icon_rect = pygame.Rect(xpos, ypos - icon_h - 4, icon_w, icon_h)
+
+            if icon_rect.collidepoint(self.mouse_pos):
+                self.switcher.switchFrontmostApp(app)
+                return
+
 
     def updateAppLabel(self, appname):
         self.appname_label.set_text(appname)
@@ -62,6 +88,17 @@ class top_bar(object):
 
     def process_events(self, e):
         self.gui.process_events(e)
+        if e.type == pygame.MOUSEBUTTONDOWN:
+            self.mouse_down = True
+            self.mouse_pos = e.pos
+        if e.type == pygame.MOUSEMOTION:
+            if self.mouse_down:
+                self.mouse_pos = e.pos
+                self.redraw = True
+        if e.type == pygame.MOUSEBUTTONUP:
+            self.switch_if_status_icon_selected()
+            self.mouse_down = False
+            self.mouse_pos = None
         if e.type == pygame.USEREVENT:
             self.redraw = True
             if e.user_type == pygame_gui.UI_BUTTON_PRESSED:

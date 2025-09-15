@@ -37,7 +37,7 @@ class LogViewerStatusApp():
         config.lookback = 100
         config.tail_from_start = True
 
-        super().__init__(bounds, config, "LogViewerStatus")
+        super().__init__(bounds, config, name)
 
         self.process_messages = [{"regex": re.compile(p['r']), **p} for p in self.process_messages]
         self.ui = {}

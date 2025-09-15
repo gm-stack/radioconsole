@@ -20,7 +20,7 @@ json.dump(_theme, theme)
 theme.flush()
 
 system_display = {
-    "top_bar_size": 64,
+    "top_bar_size": 96,
     "top_bar_app_label_width": 192,
     "target_fps": 60
 }

@@ -33,7 +33,7 @@ class SystemDStatus(LogViewer):
         })
         cfg = types.SimpleNamespace(**log_viewer_cfg)
 
-        super().__init__(bounds, cfg, f"{name}_logviewer")
+        super().__init__(bounds, cfg, name)
         self.config = config
 
         self.brackets_regex = re.compile(r'([(\[{].*?[)\]}][\s*])')

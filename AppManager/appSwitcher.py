@@ -17,7 +17,7 @@ class appSwitcher(object):
     logo = None
     logo_size = None
     redraw = False
-    status_icons_collection = []
+    status_icons_collection = {}
 
     def __init__(self, screen):
         self.gui = pygame_gui.UIManager(cfg.display.size)
@@ -59,10 +59,10 @@ class appSwitcher(object):
             # any app has status_icons_updated true
             # this could probably be optimised better (i.e. only grab what's changed)
             # but it's a pretty minor optimisation
-            self.status_icons_collection = []
+            self.status_icons_collection = {}
             for app in self.running_apps.values():
                 for status_icon in app.get_status_icons():
-                    self.status_icons_collection.append(status_icon)
+                    self.status_icons_collection[status_icon] = app.name
             return True
         return False
 
