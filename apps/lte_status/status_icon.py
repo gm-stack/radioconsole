@@ -1,10 +1,11 @@
 from pygame import gfxdraw
+from util import gradient
 
 from ..common import status_icon
 
 class lte_status_icon(status_icon):
     def __init__(self):
-        super().__init__(font_size=14)
+        super().__init__(font_size=22)
         self.underlay_icon = 'signal_dark'
         self.clear()
 
@@ -17,29 +18,31 @@ class lte_status_icon(status_icon):
         try:
             rsrq = data.get('rsrq', '')
             rsrq = float(rsrq)
-            if rsrq > -10:
-                colour = (0, 255, 0, 255)
-            elif rsrq > -15:
-                colour = (255, 255, 0, 255)
-            elif rsrq > -20:
-                colour = (255, 165, 0, 255)
-            else:
-                colour = (255, 0, 0, 255)
 
-            rsrq_text = self.font.render(data.get('rsrq', ''), True, colour)
-            self.surface.blit(rsrq_text, rsrq_text.get_rect(midtop=(30, 20)))
-            self.draw_signal_bar(rsrq)
+            rsrq_col = gradient(
+                rsrq,
+                {
+                    -10: (0,255,0),
+                    -15: (255,255,0),
+                    -20: (255,165,0),
+                    -30: (255,0,0)
+                }
+            )
+
+            rsrq_text = self.font.render(data.get('rsrq', ''), True, rsrq_col)
+            self.surface.blit(rsrq_text, rsrq_text.get_rect(midtop=(self.HW, 32)))
+            self.draw_signal_bar(rsrq, rsrq_col)
         except ValueError:
             pass
 
         if 'bands' in data:
             band_text = self.font.render(data['bands'][0]['band'], True, (255,255,255))
-            self.surface.blit(band_text, mode_text.get_rect(topright=(56,0)))
+            self.surface.blit(band_text, mode_text.get_rect(topright=(self.W - 4,0)))
 
         self.overlay_icon = icon
         super().update()
 
-    def draw_signal_bar(self, rsrq):
+    def draw_signal_bar(self, rsrq, rsrq_col):
         # -20..0 is now 0..20
         rsrq += 20.0
         rsrq = max(rsrq, 0.0)
@@ -56,11 +59,11 @@ class lte_status_icon(status_icon):
         offset = 5
 
         shape = [
-                (margin,60-margin), # bottom left
-                (rsrq,60-margin), # bottom right
-                (rsrq,60-(margin+offset+(rsrq/8))), # top right
-                (margin,60-(margin+offset)) # top left
+                (margin,self.H-margin), # bottom left
+                (rsrq,self.H-margin), # bottom right
+                (rsrq,self.H-(margin+offset+(rsrq/8))), # top right
+                (margin,self.H-(margin+offset)) # top left
             ]
 
-        gfxdraw.aapolygon(self.surface, shape, (0, 128, 0, 255))
-        gfxdraw.filled_polygon(self.surface, shape, (0, 128, 0, 255))
+        gfxdraw.aapolygon(self.surface, shape, rsrq_col)
+        gfxdraw.filled_polygon(self.surface, shape, rsrq_col)

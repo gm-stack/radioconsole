@@ -5,19 +5,18 @@ import fonts
 
 class direwolf_status_icon(status_icon):
     def __init__(self):
-        super().__init__(font_size=14)
-        self.font_bigger = fonts.get_font("B612", "Regular", 16)
+        super().__init__(font_size=22)
         self.underlay_icon = 'direwuff_dark'
         self.clear()
 
     def update(self, icon, ssh_is_errored, rx, tx_ig, tx_rf, tx_rf_igated):
         self.clear()
 
-        rx = self.font.render(time_format.mm_ss_since(rx), True, (0xFF,0xFF,0xFF))
-        self.surface.blit(rx, rx.get_rect(midtop=(30,0)))
+        rx = self.font.render("rx " + time_format.mm_ss_since(rx), True, (0xFF,0xFF,0xFF))
+        self.surface.blit(rx, rx.get_rect(midtop=(self.HW,0)))
 
-        tx_ig = self.font.render(time_format.mm_ss_since(tx_ig), True, (0xFF,0xFF,0xFF))
-        self.surface.blit(tx_ig, tx_ig.get_rect(midtop=(30,20)))
+        tx_ig = self.font.render("ig " + time_format.mm_ss_since(tx_ig), True, (0xFF,0xFF,0xFF))
+        self.surface.blit(tx_ig, tx_ig.get_rect(midtop=(self.HW,28)))
 
 
         if tx_rf_igated:
@@ -28,8 +27,8 @@ class direwolf_status_icon(status_icon):
         if not tx_rf:
             colour = (0xFF,0xFF,0xFF)
 
-        tx_rf = self.font.render(time_format.mm_ss_since(tx_rf), True, colour)
-        self.surface.blit(tx_rf, tx_rf.get_rect(midtop=(30,40)))
+        tx_rf = self.font.render("rf " + time_format.mm_ss_since(tx_rf), True, colour)
+        self.surface.blit(tx_rf, tx_rf.get_rect(midtop=(self.HW,56)))
 
         # override icon if SSH is broken
         if ssh_is_errored:
